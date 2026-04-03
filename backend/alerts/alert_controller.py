@@ -13,32 +13,31 @@ class AlertController:
     def process_sensor_data(self, sensor_data):
         rules = self.rule_db.get_active_rules()
 
-        triggered = False
-
         for rule in rules:
             # Match zone + metric
             if rule.zone != sensor_data.zone:
                 continue
 
-            if rule.metric != sensor_data.metric:
+            metric_value = None
+            if rule.metric == sensor_data.metric:
+                metric_value = sensor_data.value
+
+            if metric_value is None:
                 continue
 
-            if rule.evaluate(sensor_data.value):
-                triggered = True
-
-                log(f"Rule triggered: {rule.rule_id}")
+            if rule.evaluate(metric_value):
+                log(f"ALERT: zone={sensor_data.zone} rule={rule.rule_id} | {metric_value} {rule.operator} {rule.threshold}")
 
                 alert = Alert(
                     alert_id=str(uuid.uuid4()),
                     zone=sensor_data.zone,
                     metric=rule.metric,
-                    value=sensor_data.value,
+                    value=metric_value,
                     threshold=rule.threshold,
                     status="active",
                     timestamp=datetime.utcnow()
                 )
 
                 self.alert_db.add_alert(alert)
-
-        if not triggered:
-            log("No rules triggered")
+            else:
+                log(f"OK: zone={sensor_data.zone} rule={rule.rule_id} | {rule.metric}={metric_value} {rule.operator} {rule.threshold}")
