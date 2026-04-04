@@ -61,17 +61,28 @@
 
   --radius-md: var(--radius);
   --radius-xl: var(--radius-lg);
+
+  /* Override Tailwind's text-3xl so it matches the prototype's 32px H1 exactly
+     (default would be 30px). text-xl (20px), text-base (16px), text-sm (14px),
+     text-xs (12px) already match the prototype and are kept as-is. */
+  --text-3xl: 32px;
+  --text-3xl--line-height: 1.2;
 }
 
-html,
-body {
+/* html stays at browser default (16px) so Tailwind's rem-based text utilities
+   (text-sm=14px, text-base=16px, text-xl=20px, text-3xl=30px …) match the
+   prototype's pixel values. Body-level 14px default is applied in the layout
+   via the Tailwind `text-sm` class. */
+html {
   background: var(--bg);
   color: var(--text);
   font-family: var(--font-sans);
-  font-size: 14px;
-  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  line-height: 1.6;
 }
 
 *,
