@@ -1,0 +1,920 @@
+import { useState, useEffect, useRef } from "react";
+
+// ─── Design Tokens (Vercel-inspired) ───
+const T = {
+  bg: "#000000",
+  bgCard: "#0a0a0a",
+  bgHover: "#111111",
+  bgInput: "#0a0a0a",
+  border: "#1a1a1a",
+  borderHover: "#333333",
+  text: "#ededed",
+  textSecondary: "#888888",
+  textMuted: "#666666",
+  accent: "#0070f3",
+  accentHover: "#0060df",
+  success: "#00c853",
+  warning: "#f5a623",
+  error: "#ee0000",
+  errorBg: "rgba(238,0,0,0.08)",
+  successBg: "rgba(0,200,83,0.08)",
+  warningBg: "rgba(245,166,35,0.08)",
+  accentBg: "rgba(0,112,243,0.08)",
+  radius: "8px",
+  radiusLg: "12px",
+  font: "'Geist', -apple-system, sans-serif",
+  mono: "'Geist Mono', 'SF Mono', monospace",
+  shadow: "0 2px 8px rgba(0,0,0,0.5)",
+  transition: "all 0.15s ease",
+};
+
+// ─── Shared Styles ───
+const styles = {
+  page: {
+    minHeight: "100vh",
+    background: T.bg,
+    color: T.text,
+    fontFamily: T.font,
+    fontSize: "14px",
+    lineHeight: "1.6",
+  },
+  container: {
+    maxWidth: "1200px",
+    margin: "0 auto",
+    padding: "0 24px",
+  },
+  nav: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: "16px 24px",
+    borderBottom: `1px solid ${T.border}`,
+    position: "sticky",
+    top: 0,
+    background: "rgba(0,0,0,0.8)",
+    backdropFilter: "blur(12px)",
+    zIndex: 100,
+  },
+  navLeft: {
+    display: "flex",
+    alignItems: "center",
+    gap: "24px",
+  },
+  logo: {
+    fontSize: "16px",
+    fontWeight: 700,
+    letterSpacing: "-0.02em",
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+    cursor: "pointer",
+  },
+  navLink: (active) => ({
+    fontSize: "13px",
+    color: active ? T.text : T.textSecondary,
+    cursor: "pointer",
+    transition: T.transition,
+    padding: "4px 0",
+    borderBottom: active ? `1px solid ${T.text}` : "1px solid transparent",
+  }),
+  btn: (variant = "default") => ({
+    padding: variant === "sm" ? "6px 12px" : "8px 16px",
+    borderRadius: T.radius,
+    border: variant === "primary" ? "none" : `1px solid ${T.border}`,
+    background: variant === "primary" ? T.accent : "transparent",
+    color: variant === "primary" ? "#fff" : T.text,
+    fontSize: "13px",
+    fontWeight: 500,
+    cursor: "pointer",
+    transition: T.transition,
+    fontFamily: T.font,
+    display: "inline-flex",
+    alignItems: "center",
+    gap: "6px",
+  }),
+  input: {
+    padding: "8px 12px",
+    borderRadius: T.radius,
+    border: `1px solid ${T.border}`,
+    background: T.bgInput,
+    color: T.text,
+    fontSize: "14px",
+    fontFamily: T.font,
+    outline: "none",
+    width: "100%",
+    transition: T.transition,
+  },
+  card: {
+    background: T.bgCard,
+    border: `1px solid ${T.border}`,
+    borderRadius: T.radiusLg,
+    padding: "20px",
+    transition: T.transition,
+  },
+  badge: (type = "default") => {
+    const colors = {
+      default: { bg: T.border, color: T.textSecondary },
+      success: { bg: T.successBg, color: T.success },
+      warning: { bg: T.warningBg, color: T.warning },
+      error: { bg: T.errorBg, color: T.error },
+      info: { bg: T.accentBg, color: T.accent },
+    };
+    const c = colors[type] || colors.default;
+    return {
+      padding: "2px 8px",
+      borderRadius: "9999px",
+      fontSize: "11px",
+      fontWeight: 500,
+      background: c.bg,
+      color: c.color,
+      display: "inline-flex",
+      alignItems: "center",
+      gap: "4px",
+    };
+  },
+  table: {
+    width: "100%",
+    borderCollapse: "collapse",
+  },
+  th: {
+    padding: "10px 16px",
+    textAlign: "left",
+    fontSize: "12px",
+    fontWeight: 500,
+    color: T.textMuted,
+    borderBottom: `1px solid ${T.border}`,
+    textTransform: "uppercase",
+    letterSpacing: "0.05em",
+  },
+  td: {
+    padding: "12px 16px",
+    borderBottom: `1px solid ${T.border}`,
+    fontSize: "13px",
+  },
+  h1: {
+    fontSize: "32px",
+    fontWeight: 700,
+    letterSpacing: "-0.04em",
+    lineHeight: 1.2,
+  },
+  h2: {
+    fontSize: "20px",
+    fontWeight: 600,
+    letterSpacing: "-0.02em",
+  },
+  h3: {
+    fontSize: "16px",
+    fontWeight: 600,
+    letterSpacing: "-0.01em",
+  },
+  label: {
+    fontSize: "13px",
+    fontWeight: 500,
+    color: T.textSecondary,
+    marginBottom: "6px",
+    display: "block",
+  },
+  separator: {
+    height: "1px",
+    background: T.border,
+    margin: "24px 0",
+  },
+};
+
+// ─── Icons (minimal SVG) ───
+const Icon = ({ name, size = 16, color = "currentColor" }) => {
+  const icons = {
+    logo: <><circle cx="12" cy="12" r="10" fill="none" stroke={color} strokeWidth="1.5"/><path d="M8 12l3 3 5-5" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></>,
+    alert: <><path d="M12 2L2 20h20L12 2z" fill="none" stroke={color} strokeWidth="1.5" strokeLinejoin="round"/><line x1="12" y1="9" x2="12" y2="13" stroke={color} strokeWidth="1.5" strokeLinecap="round"/><circle cx="12" cy="16" r="0.5" fill={color}/></>,
+    map: <><circle cx="12" cy="10" r="3" fill="none" stroke={color} strokeWidth="1.5"/><path d="M12 2C7.6 2 4 5.4 4 9.5 4 15.5 12 22 12 22s8-6.5 8-12.5C20 5.4 16.4 2 12 2z" fill="none" stroke={color} strokeWidth="1.5"/></>,
+    chart: <><path d="M3 20h18M5 20V10M9 20V4M13 20v-8M17 20V8" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round"/></>,
+    user: <><circle cx="12" cy="8" r="4" fill="none" stroke={color} strokeWidth="1.5"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6" fill="none" stroke={color} strokeWidth="1.5"/></>,
+    settings: <><circle cx="12" cy="12" r="3" fill="none" stroke={color} strokeWidth="1.5"/><path d="M12 1v4M12 19v4M4.2 4.2l2.8 2.8M17 17l2.8 2.8M1 12h4M19 12h4M4.2 19.8l2.8-2.8M17 7l2.8-2.8" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round"/></>,
+    search: <><circle cx="10" cy="10" r="6" fill="none" stroke={color} strokeWidth="1.5"/><line x1="15" y1="15" x2="21" y2="21" stroke={color} strokeWidth="1.5" strokeLinecap="round"/></>,
+    bell: <><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" fill="none" stroke={color} strokeWidth="1.5"/><path d="M13.7 21a2 2 0 0 1-3.4 0" fill="none" stroke={color} strokeWidth="1.5"/></>,
+    check: <><path d="M5 12l5 5L20 7" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></>,
+    x: <><line x1="6" y1="6" x2="18" y2="18" stroke={color} strokeWidth="1.5" strokeLinecap="round"/><line x1="18" y1="6" x2="6" y2="18" stroke={color} strokeWidth="1.5" strokeLinecap="round"/></>,
+    chevron: <><path d="M9 6l6 6-6 6" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></>,
+    plus: <><line x1="12" y1="5" x2="12" y2="19" stroke={color} strokeWidth="1.5" strokeLinecap="round"/><line x1="5" y1="12" x2="19" y2="12" stroke={color} strokeWidth="1.5" strokeLinecap="round"/></>,
+    logout: <><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" fill="none" stroke={color} strokeWidth="1.5"/><polyline points="16,17 21,12 16,7" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><line x1="21" y1="12" x2="9" y2="12" stroke={color} strokeWidth="1.5" strokeLinecap="round"/></>,
+    shield: <><path d="M12 2l8 4v6c0 5.5-3.8 8.2-8 10-4.2-1.8-8-4.5-8-10V6l8-4z" fill="none" stroke={color} strokeWidth="1.5"/></>,
+    database: <><ellipse cx="12" cy="5" rx="8" ry="3" fill="none" stroke={color} strokeWidth="1.5"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5" fill="none" stroke={color} strokeWidth="1.5"/><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3" fill="none" stroke={color} strokeWidth="1.5"/></>,
+    ranking: <><path d="M6 9H2v12h4V9zM14 4h-4v17h4V4zM22 14h-4v7h4v-7z" fill="none" stroke={color} strokeWidth="1.5" strokeLinejoin="round"/></>,
+    wind: <><path d="M9.6 4.5A2.5 2.5 0 1 1 12 7H2M12.9 17.5A2.5 2.5 0 1 0 15.4 15H2M17.4 8.5A2.5 2.5 0 1 1 19.9 11H2" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round"/></>,
+    thermometer: <><path d="M14 14.8V5a2 2 0 0 0-4 0v9.8a4 4 0 1 0 4 0z" fill="none" stroke={color} strokeWidth="1.5"/></>,
+    droplet: <><path d="M12 2.7c-5 5.3-7 8-7 11.3a7 7 0 0 0 14 0c0-3.3-2-6-7-11.3z" fill="none" stroke={color} strokeWidth="1.5"/></>,
+    volume: <><path d="M11 5L6 9H2v6h4l5 4V5z" fill="none" stroke={color} strokeWidth="1.5" strokeLinejoin="round"/><path d="M19.1 4.9a10 10 0 0 1 0 14.2M15.5 8.5a5 5 0 0 1 0 7" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round"/></>,
+    file: <><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" fill="none" stroke={color} strokeWidth="1.5"/><polyline points="14,2 14,8 20,8" fill="none" stroke={color} strokeWidth="1.5"/></>,
+    clock: <><circle cx="12" cy="12" r="10" fill="none" stroke={color} strokeWidth="1.5"/><polyline points="12,6 12,12 16,14" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round"/></>,
+    edit: <><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" fill="none" stroke={color} strokeWidth="1.5"/><path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" fill="none" stroke={color} strokeWidth="1.5"/></>,
+    trash: <><polyline points="3,6 5,6 21,6" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" fill="none" stroke={color} strokeWidth="1.5"/></>,
+    archive: <><path d="M21 8v13H3V8M1 3h22v5H1z" fill="none" stroke={color} strokeWidth="1.5" strokeLinejoin="round"/><line x1="10" y1="12" x2="14" y2="12" stroke={color} strokeWidth="1.5" strokeLinecap="round"/></>,
+  };
+  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>{icons[name]}</svg>;
+};
+
+// ─── Sparkline Component ───
+const Sparkline = ({ data, color = T.accent, width = 120, height = 32 }) => {
+  const min = Math.min(...data);
+  const max = Math.max(...data);
+  const range = max - min || 1;
+  const points = data.map((v, i) =>
+    `${(i / (data.length - 1)) * width},${height - ((v - min) / range) * (height - 4) - 2}`
+  ).join(" ");
+  return (
+    <svg width={width} height={height} style={{ display: "block" }}>
+      <polyline points={points} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+};
+
+// ─── Gauge Component ───
+const Gauge = ({ value, max, label, unit, color = T.accent }) => {
+  const pct = Math.min(value / max, 1);
+  return (
+    <div style={{ textAlign: "center" }}>
+      <svg width="100" height="80" viewBox="0 0 100 80">
+        <path d="M 10 70 A 40 40 0 1 1 90 70" fill="none" stroke={T.border} strokeWidth="6" strokeLinecap="round" />
+        <path d="M 10 70 A 40 40 0 1 1 90 70" fill="none" stroke={color} strokeWidth="6" strokeLinecap="round"
+          strokeDasharray={`${pct * 200} 300`} />
+        <text x="50" y="50" textAnchor="middle" fill={T.text} fontSize="18" fontWeight="700" fontFamily={T.font}>{value}</text>
+        <text x="50" y="64" textAnchor="middle" fill={T.textMuted} fontSize="9" fontFamily={T.font}>{unit}</text>
+      </svg>
+      <div style={{ fontSize: "11px", color: T.textSecondary, marginTop: "4px" }}>{label}</div>
+    </div>
+  );
+};
+
+// ─── Mock Data ───
+const MOCK = {
+  zones: [
+    { id: "z1", name: "Downtown Core", aqi: 42, temp: 18, humidity: 62, noise: 68, status: "good" },
+    { id: "z2", name: "Harbour District", aqi: 35, temp: 17, humidity: 71, noise: 55, status: "good" },
+    { id: "z3", name: "Industrial Park", aqi: 89, temp: 21, humidity: 48, noise: 82, status: "warning" },
+    { id: "z4", name: "Riverside", aqi: 28, temp: 16, humidity: 74, noise: 42, status: "good" },
+    { id: "z5", name: "Uptown", aqi: 51, temp: 19, humidity: 58, noise: 61, status: "moderate" },
+    { id: "z6", name: "West End", aqi: 105, temp: 22, humidity: 44, noise: 78, status: "alert" },
+  ],
+  alerts: [
+    { id: "ALT-001", zone: "West End", type: "Air Quality", severity: "critical", value: "AQI 105", rule: "AQI > 100", time: "2 min ago", status: "active" },
+    { id: "ALT-002", zone: "Industrial Park", type: "Noise", severity: "warning", value: "82 dB", rule: "Noise > 80 dB", time: "14 min ago", status: "active" },
+    { id: "ALT-003", zone: "Downtown Core", type: "Temperature", severity: "info", value: "32°C", rule: "Temp > 30°C", time: "1 hr ago", status: "acknowledged" },
+    { id: "ALT-004", zone: "Harbour District", type: "Air Quality", severity: "warning", value: "AQI 88", rule: "AQI > 85", time: "3 hr ago", status: "resolved" },
+  ],
+  cities: [
+    { rank: 1, name: "Halifax", aqi: 18, temp: 14, noise: 42, humidity: 68 },
+    { rank: 2, name: "Victoria", aqi: 22, temp: 16, noise: 45, humidity: 72 },
+    { rank: 3, name: "Ottawa", aqi: 28, temp: 15, noise: 48, humidity: 65 },
+    { rank: 4, name: "Calgary", aqi: 31, temp: 12, noise: 52, humidity: 55 },
+    { rank: 5, name: "Toronto", aqi: 42, temp: 18, noise: 68, humidity: 62 },
+    { rank: 6, name: "Vancouver", aqi: 35, temp: 17, noise: 58, humidity: 70 },
+    { rank: 7, name: "Montreal", aqi: 48, temp: 16, noise: 65, humidity: 67 },
+    { rank: 8, name: "Winnipeg", aqi: 55, temp: 10, noise: 50, humidity: 58 },
+    { rank: 9, name: "Edmonton", aqi: 61, temp: 11, noise: 54, humidity: 52 },
+    { rank: 10, name: "Hamilton", aqi: 58, temp: 17, noise: 62, humidity: 64 },
+  ],
+  sparkData: {
+    aqi: [45, 42, 48, 51, 47, 42, 38, 41, 44, 42],
+    temp: [16, 17, 18, 19, 18, 17, 18, 19, 20, 18],
+    humidity: [65, 62, 58, 60, 63, 67, 64, 62, 60, 62],
+    noise: [55, 58, 62, 68, 72, 65, 60, 58, 55, 68],
+  },
+  auditLogs: [
+    { time: "10:42 AM", user: "admin@scemas.ca", action: "Created alert rule", detail: "AQI > 100 for West End" },
+    { time: "10:15 AM", user: "operator1@scemas.ca", action: "Acknowledged alert", detail: "ALT-003 — Temperature" },
+    { time: "09:58 AM", user: "admin@scemas.ca", action: "Updated account", detail: "operator2@scemas.ca role changed" },
+    { time: "09:30 AM", user: "system", action: "Sensor offline", detail: "Sensor SN-042 in Industrial Park" },
+    { time: "09:12 AM", user: "operator1@scemas.ca", action: "Resolved alert", detail: "ALT-004 — Air Quality" },
+  ],
+  sensors: [
+    { id: "SN-001", zone: "Downtown Core", type: "Multi", status: "online", lastPing: "12s ago", battery: "92%" },
+    { id: "SN-012", zone: "Harbour District", type: "AQ+Temp", status: "online", lastPing: "8s ago", battery: "87%" },
+    { id: "SN-023", zone: "Industrial Park", type: "Multi", status: "online", lastPing: "15s ago", battery: "78%" },
+    { id: "SN-034", zone: "Riverside", type: "Noise", status: "online", lastPing: "5s ago", battery: "95%" },
+    { id: "SN-042", zone: "Industrial Park", type: "AQ", status: "offline", lastPing: "47m ago", battery: "12%" },
+    { id: "SN-051", zone: "West End", type: "Multi", status: "online", lastPing: "3s ago", battery: "81%" },
+  ],
+  accounts: [
+    { email: "admin@scemas.ca", role: "Administrator", created: "Jan 15, 2026", lastLogin: "Today 10:42 AM" },
+    { email: "operator1@scemas.ca", role: "Operator", created: "Jan 20, 2026", lastLogin: "Today 09:12 AM" },
+    { email: "operator2@scemas.ca", role: "Operator", created: "Feb 01, 2026", lastLogin: "Yesterday 4:30 PM" },
+  ],
+  apiEndpoints: [
+    { method: "GET", path: "/api/v1/sensors/{zoneID}", desc: "Get aggregated sensor data for a zone" },
+    { method: "GET", path: "/api/v1/zones", desc: "List all available city zones" },
+    { method: "GET", path: "/api/v1/alerts/active", desc: "Get currently active public alerts" },
+    { method: "GET", path: "/api/v1/rankings", desc: "Get city environmental rankings" },
+    { method: "GET", path: "/api/v1/historical/{zoneID}", desc: "Get historical data for a zone" },
+  ],
+};
+
+// ─── Navigation ───
+const Navbar = ({ page, setPage, role, onLogout }) => {
+  const links = role === "admin"
+    ? [
+        { key: "dashboard", label: "Dashboard" },
+        { key: "alerts", label: "Alerts" },
+        { key: "alert-rules", label: "Rules" },
+        { key: "sensors", label: "Sensors" },
+        { key: "rankings", label: "Rankings" },
+        { key: "accounts", label: "Accounts" },
+        { key: "audit", label: "Audit Log" },
+      ]
+    : role === "operator"
+    ? [
+        { key: "dashboard", label: "Dashboard" },
+        { key: "alerts", label: "Alerts" },
+        { key: "sensors", label: "Sensors" },
+        { key: "rankings", label: "Rankings" },
+        { key: "account-edit", label: "Account" },
+      ]
+    : [
+        { key: "public", label: "Overview" },
+        { key: "rankings", label: "Rankings" },
+        { key: "api-docs", label: "API" },
+      ];
+
+  return (
+    <nav style={styles.nav}>
+      <div style={styles.navLeft}>
+        <div style={styles.logo} onClick={() => setPage(role === "public" ? "public" : "dashboard")}>
+          <Icon name="logo" size={20} />
+          <span>SCEMAS</span>
+          {role !== "public" && (
+            <span style={{ ...styles.badge(role === "admin" ? "info" : "default"), marginLeft: "4px" }}>
+              {role}
+            </span>
+          )}
+        </div>
+        <div style={{ display: "flex", gap: "16px", marginLeft: "16px" }}>
+          {links.map(l => (
+            <span key={l.key} style={styles.navLink(page === l.key)} onClick={() => setPage(l.key)}>
+              {l.label}
+            </span>
+          ))}
+        </div>
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+        {role !== "public" && (
+          <>
+            <div style={{ position: "relative", cursor: "pointer" }} onClick={() => setPage("alerts")}>
+              <Icon name="bell" size={16} color={T.textSecondary} />
+              <div style={{
+                position: "absolute", top: -4, right: -4, width: 8, height: 8,
+                borderRadius: "50%", background: T.error,
+              }} />
+            </div>
+            <span style={{ fontSize: "13px", color: T.textSecondary, cursor: "pointer" }} onClick={() => setPage("account-edit")}>
+              <Icon name="user" size={16} />
+            </span>
+          </>
+        )}
+        <button style={styles.btn("default")} onClick={onLogout}>
+          <Icon name="logout" size={14} />
+          {role === "public" ? "Sign In" : "Logout"}
+        </button>
+      </div>
+    </nav>
+  );
+};
+
+// ─── Page: Login ───
+const LoginPage = ({ onLogin }) => {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = () => {
+    setLoading(true);
+    setError("");
+    setTimeout(() => {
+      if (email.includes("admin")) onLogin("admin");
+      else if (email && password) onLogin("operator");
+      else { setError("Invalid email or password. Please try again."); setLoading(false); }
+    }, 800);
+  };
+
+  return (
+    <div style={{ ...styles.page, display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ width: "360px" }}>
+        <div style={{ textAlign: "center", marginBottom: "40px" }}>
+          <div style={{ ...styles.logo, justifyContent: "center", fontSize: "20px", marginBottom: "8px" }}>
+            <Icon name="logo" size={28} />
+            SCEMAS
+          </div>
+          <p style={{ color: T.textSecondary, fontSize: "14px" }}>Smart City Environmental Monitoring</p>
+        </div>
+
+        <div style={{ ...styles.card, padding: "32px" }}>
+          <h2 style={{ ...styles.h2, marginBottom: "24px" }}>Sign in</h2>
+
+          {error && (
+            <div style={{
+              padding: "10px 14px", borderRadius: T.radius, background: T.errorBg,
+              border: `1px solid rgba(238,0,0,0.15)`, marginBottom: "16px",
+              fontSize: "13px", color: T.error, display: "flex", alignItems: "center", gap: "8px"
+            }}>
+              <Icon name="alert" size={14} color={T.error} /> {error}
+            </div>
+          )}
+
+          <div style={{ marginBottom: "16px" }}>
+            <label style={styles.label}>Email</label>
+            <input style={styles.input} type="email" placeholder="you@scemas.ca" value={email} onChange={e => setEmail(e.target.value)} onKeyDown={e => e.key === "Enter" && handleSubmit()} />
+          </div>
+
+          <div style={{ marginBottom: "24px" }}>
+            <label style={styles.label}>Password</label>
+            <input style={styles.input} type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => e.key === "Enter" && handleSubmit()} />
+          </div>
+
+          <button style={{ ...styles.btn("primary"), width: "100%", justifyContent: "center", padding: "10px", opacity: loading ? 0.7 : 1 }} onClick={handleSubmit} disabled={loading}>
+            {loading ? "Signing in..." : "Continue"}
+          </button>
+
+          <div style={{ textAlign: "center", marginTop: "16px" }}>
+            <span style={{ fontSize: "13px", color: T.textSecondary }}>
+              Don't have an account? <span style={{ color: T.accent, cursor: "pointer" }}>Create one</span>
+            </span>
+          </div>
+        </div>
+
+        <div style={{ textAlign: "center", marginTop: "24px" }}>
+          <span style={{ fontSize: "12px", color: T.textMuted, cursor: "pointer" }} onClick={() => onLogin("public")}>
+            Continue as public user →
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ─── Page: Create Account ───
+const CreateAccountPage = ({ setPage }) => (
+  <div style={{ ...styles.page, display: "flex", alignItems: "center", justifyContent: "center" }}>
+    <div style={{ width: "360px" }}>
+      <div style={{ textAlign: "center", marginBottom: "40px" }}>
+        <div style={{ ...styles.logo, justifyContent: "center", fontSize: "20px", marginBottom: "8px" }}>
+          <Icon name="logo" size={28} /> SCEMAS
+        </div>
+      </div>
+      <div style={{ ...styles.card, padding: "32px" }}>
+        <h2 style={{ ...styles.h2, marginBottom: "24px" }}>Create account</h2>
+        <div style={{ marginBottom: "16px" }}><label style={styles.label}>Email</label><input style={styles.input} type="email" placeholder="you@scemas.ca" /></div>
+        <div style={{ marginBottom: "16px" }}><label style={styles.label}>Password</label><input style={styles.input} type="password" placeholder="Minimum 8 characters" /></div>
+        <div style={{ marginBottom: "24px" }}><label style={styles.label}>Confirm Password</label><input style={styles.input} type="password" placeholder="Repeat password" /></div>
+        <button style={{ ...styles.btn("primary"), width: "100%", justifyContent: "center", padding: "10px" }}>Create Account</button>
+        <div style={{ textAlign: "center", marginTop: "16px" }}>
+          <span style={{ fontSize: "13px", color: T.textSecondary }}>Already have an account? <span style={{ color: T.accent, cursor: "pointer" }} onClick={() => setPage("login")}>Sign in</span></span>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+// ─── Page: Public View ───
+const PublicPage = () => (
+  <div style={styles.container}>
+    <div style={{ padding: "48px 0 24px" }}>
+      <h1 style={styles.h1}>Environmental Overview</h1>
+      <p style={{ color: T.textSecondary, marginTop: "8px", fontSize: "15px" }}>Real-time environmental conditions across monitored city zones.</p>
+    </div>
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "12px", marginBottom: "32px" }}>
+      {[
+        { icon: "wind", label: "Avg. AQI", value: "47", sub: "Moderate", color: T.warning, data: MOCK.sparkData.aqi },
+        { icon: "thermometer", label: "Avg. Temp", value: "18°C", sub: "Normal", color: T.accent, data: MOCK.sparkData.temp },
+        { icon: "droplet", label: "Avg. Humidity", value: "62%", sub: "Normal", color: T.accent, data: MOCK.sparkData.humidity },
+        { icon: "volume", label: "Avg. Noise", value: "61 dB", sub: "Moderate", color: T.warning, data: MOCK.sparkData.noise },
+      ].map((m, i) => (
+        <div key={i} style={styles.card}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+            <div>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px", color: T.textSecondary, fontSize: "12px", marginBottom: "8px" }}><Icon name={m.icon} size={14} /> {m.label}</div>
+              <div style={{ fontSize: "28px", fontWeight: 700, letterSpacing: "-0.03em" }}>{m.value}</div>
+              <div style={{ fontSize: "12px", color: m.color, marginTop: "2px" }}>{m.sub}</div>
+            </div>
+            <Sparkline data={m.data} color={m.color} width={80} height={28} />
+          </div>
+        </div>
+      ))}
+    </div>
+    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "32px" }}>
+      <div style={{ ...styles.card, minHeight: "320px", display: "flex", flexDirection: "column" }}>
+        <h3 style={{ ...styles.h3, marginBottom: "16px" }}>Sensor Map</h3>
+        <div style={{ flex: 1, borderRadius: T.radius, background: "#0d1117", border: `1px solid ${T.border}`, display: "flex", alignItems: "center", justifyContent: "center", position: "relative", overflow: "hidden" }}>
+          <svg width="100%" height="100%" viewBox="0 0 400 280" style={{ position: "absolute" }}>
+            {Array.from({ length: 20 }, (_, i) => (<line key={`h${i}`} x1="0" y1={i * 14} x2="400" y2={i * 14} stroke={T.border} strokeWidth="0.5" />))}
+            {Array.from({ length: 28 }, (_, i) => (<line key={`v${i}`} x1={i * 14} y1="0" x2={i * 14} y2="280" stroke={T.border} strokeWidth="0.5" />))}
+            {[{ x: 200, y: 80, c: T.success }, { x: 120, y: 140, c: T.success }, { x: 310, y: 110, c: T.warning }, { x: 80, y: 200, c: T.success }, { x: 260, y: 180, c: T.error }, { x: 340, y: 200, c: T.success }, { x: 160, y: 60, c: T.success }, { x: 300, y: 230, c: T.textMuted }].map((s, i) => (
+              <g key={i}><circle cx={s.x} cy={s.y} r="12" fill={s.c} opacity="0.15" /><circle cx={s.x} cy={s.y} r="4" fill={s.c} /></g>
+            ))}
+          </svg>
+          <div style={{ position: "absolute", bottom: "12px", left: "12px", display: "flex", gap: "12px", fontSize: "10px" }}>
+            {[{ c: T.success, l: "Good" }, { c: T.warning, l: "Warning" }, { c: T.error, l: "Alert" }, { c: T.textMuted, l: "Offline" }].map((item, i) => (
+              <span key={i} style={{ display: "flex", alignItems: "center", gap: "4px", color: T.textSecondary }}><span style={{ width: 6, height: 6, borderRadius: "50%", background: item.c }} /> {item.l}</span>
+            ))}
+          </div>
+        </div>
+      </div>
+      <div style={styles.card}>
+        <h3 style={{ ...styles.h3, marginBottom: "16px" }}>Zone Conditions</h3>
+        <table style={styles.table}>
+          <thead><tr><th style={styles.th}>Zone</th><th style={styles.th}>AQI</th><th style={styles.th}>Temp</th><th style={styles.th}>Noise</th><th style={styles.th}>Status</th></tr></thead>
+          <tbody>
+            {MOCK.zones.map(z => (
+              <tr key={z.id}>
+                <td style={{ ...styles.td, fontWeight: 500 }}>{z.name}</td><td style={styles.td}>{z.aqi}</td><td style={styles.td}>{z.temp}°C</td><td style={styles.td}>{z.noise} dB</td>
+                <td style={styles.td}><span style={styles.badge(z.status === "good" ? "success" : z.status === "alert" ? "error" : "warning")}>{z.status}</span></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div style={{ ...styles.card, marginBottom: "48px" }}>
+      <h3 style={{ ...styles.h3, marginBottom: "16px" }}>Active Alerts</h3>
+      <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+        {MOCK.alerts.filter(a => a.status === "active").map(a => (
+          <div key={a.id} style={{ padding: "12px 16px", borderRadius: T.radius, background: a.severity === "critical" ? T.errorBg : T.warningBg, border: `1px solid ${a.severity === "critical" ? "rgba(238,0,0,0.15)" : "rgba(245,166,35,0.15)"}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+              <Icon name="alert" size={16} color={a.severity === "critical" ? T.error : T.warning} />
+              <div><div style={{ fontWeight: 500, fontSize: "13px" }}>{a.type} — {a.zone}</div><div style={{ fontSize: "12px", color: T.textSecondary }}>{a.value} · {a.rule}</div></div>
+            </div>
+            <span style={{ fontSize: "12px", color: T.textMuted }}>{a.time}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  </div>
+);
+
+// ─── Page: Dashboard ───
+const DashboardPage = ({ role, setPage }) => (
+  <div style={styles.container}>
+    <div style={{ padding: "32px 0 24px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <div><h1 style={styles.h1}>Dashboard</h1><p style={{ color: T.textSecondary, marginTop: "4px" }}>System overview and real-time monitoring</p></div>
+      <div style={{ display: "flex", gap: "8px" }}>
+        <button style={styles.btn()} onClick={() => setPage("sensors")}><Icon name="database" size={14} /> Sensors</button>
+        {role === "admin" && <button style={styles.btn("primary")} onClick={() => setPage("alert-rules")}><Icon name="plus" size={14} /> New Rule</button>}
+      </div>
+    </div>
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "12px", marginBottom: "24px" }}>
+      {[{ label: "Active Alerts", value: "2", badge: "error" }, { label: "Sensors Online", value: "5/6", badge: "success" }, { label: "Zones Monitored", value: "6", badge: "info" }, { label: "Avg. AQI", value: "47", badge: "warning" }, { label: "Uptime", value: "99.8%", badge: "success" }].map((s, i) => (
+        <div key={i} style={styles.card}>
+          <div style={{ fontSize: "12px", color: T.textSecondary, marginBottom: "6px" }}>{s.label}</div>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}><span style={{ fontSize: "24px", fontWeight: 700, letterSpacing: "-0.03em" }}>{s.value}</span><span style={styles.badge(s.badge)}>●</span></div>
+        </div>
+      ))}
+    </div>
+    <div style={{ ...styles.card, marginBottom: "16px" }}>
+      <h3 style={{ ...styles.h3, marginBottom: "16px" }}>Current Readings — Downtown Core</h3>
+      <div style={{ display: "flex", justifyContent: "space-around", padding: "8px 0" }}>
+        <Gauge value={42} max={200} label="Air Quality" unit="AQI" color={T.success} />
+        <Gauge value={18} max={45} label="Temperature" unit="°C" color={T.accent} />
+        <Gauge value={62} max={100} label="Humidity" unit="%" color={T.accent} />
+        <Gauge value={68} max={120} label="Noise Level" unit="dB" color={T.warning} />
+      </div>
+    </div>
+    <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: "16px", marginBottom: "24px" }}>
+      <div style={{ ...styles.card, minHeight: "280px" }}>
+        <h3 style={{ ...styles.h3, marginBottom: "12px" }}>Sensor Map</h3>
+        <div style={{ height: "240px", borderRadius: T.radius, background: "#0d1117", border: `1px solid ${T.border}`, position: "relative", overflow: "hidden" }}>
+          <svg width="100%" height="100%" viewBox="0 0 500 240">
+            {Array.from({ length: 18 }, (_, i) => (<line key={`h${i}`} x1="0" y1={i * 14} x2="500" y2={i * 14} stroke={T.border} strokeWidth="0.5" />))}
+            {Array.from({ length: 36 }, (_, i) => (<line key={`v${i}`} x1={i * 14} y1="0" x2={i * 14} y2="240" stroke={T.border} strokeWidth="0.5" />))}
+            {[{ x: 250, y: 60, c: T.success, l: "Downtown" }, { x: 140, y: 120, c: T.success, l: "Harbour" }, { x: 380, y: 90, c: T.warning, l: "Industrial" }, { x: 80, y: 180, c: T.success, l: "Riverside" }, { x: 320, y: 170, c: T.error, l: "West End" }, { x: 440, y: 180, c: T.success, l: "Uptown" }].map((s, i) => (
+              <g key={i}><circle cx={s.x} cy={s.y} r="16" fill={s.c} opacity="0.12" /><circle cx={s.x} cy={s.y} r="5" fill={s.c} /><text x={s.x} y={s.y - 12} textAnchor="middle" fill={T.textSecondary} fontSize="8" fontFamily={T.font}>{s.l}</text></g>
+            ))}
+          </svg>
+        </div>
+      </div>
+      <div style={styles.card}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+          <h3 style={styles.h3}>Active Alerts</h3><span style={{ fontSize: "12px", color: T.accent, cursor: "pointer" }} onClick={() => setPage("alerts")}>View all →</span>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+          {MOCK.alerts.filter(a => a.status === "active").map(a => (
+            <div key={a.id} style={{ padding: "10px 12px", borderRadius: T.radius, background: a.severity === "critical" ? T.errorBg : T.warningBg, border: `1px solid ${a.severity === "critical" ? "rgba(238,0,0,0.12)" : "rgba(245,166,35,0.12)"}`, cursor: "pointer" }} onClick={() => setPage("alert-detail")}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}><Icon name="alert" size={14} color={a.severity === "critical" ? T.error : T.warning} /><span style={{ fontWeight: 500, fontSize: "13px" }}>{a.id}</span></div>
+                <span style={styles.badge(a.severity === "critical" ? "error" : "warning")}>{a.severity}</span>
+              </div>
+              <div style={{ fontSize: "12px", color: T.textSecondary, marginTop: "4px", marginLeft: "22px" }}>{a.type} in {a.zone} · {a.value}</div>
+              <div style={{ fontSize: "11px", color: T.textMuted, marginTop: "2px", marginLeft: "22px" }}>{a.time}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+    <div style={{ ...styles.card, marginBottom: "48px" }}>
+      <h3 style={{ ...styles.h3, marginBottom: "16px" }}>Trend Overview (24h)</h3>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "24px" }}>
+        {[{ label: "Air Quality Index", data: MOCK.sparkData.aqi, color: T.warning, val: "42" }, { label: "Temperature (°C)", data: MOCK.sparkData.temp, color: T.accent, val: "18" }, { label: "Humidity (%)", data: MOCK.sparkData.humidity, color: T.accent, val: "62" }, { label: "Noise (dB)", data: MOCK.sparkData.noise, color: T.warning, val: "68" }].map((t, i) => (
+          <div key={i}><div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}><span style={{ fontSize: "12px", color: T.textSecondary }}>{t.label}</span><span style={{ fontSize: "13px", fontWeight: 600 }}>{t.val}</span></div><Sparkline data={t.data} color={t.color} width={240} height={40} /></div>
+        ))}
+      </div>
+    </div>
+  </div>
+);
+
+// ─── Page: Alerts List ───
+const AlertsPage = ({ setPage }) => {
+  const [filter, setFilter] = useState("all");
+  const filtered = filter === "all" ? MOCK.alerts : MOCK.alerts.filter(a => a.status === filter);
+  return (
+    <div style={styles.container}>
+      <div style={{ padding: "32px 0 24px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <h1 style={styles.h1}>Alerts</h1>
+        <div style={{ display: "flex", gap: "4px" }}>
+          {["all", "active", "acknowledged", "resolved"].map(f => (<button key={f} style={{ ...styles.btn(filter === f ? "primary" : "default"), textTransform: "capitalize", fontSize: "12px" }} onClick={() => setFilter(f)}>{f}</button>))}
+        </div>
+      </div>
+      <div style={styles.card}>
+        <table style={styles.table}>
+          <thead><tr><th style={styles.th}>ID</th><th style={styles.th}>Zone</th><th style={styles.th}>Type</th><th style={styles.th}>Value</th><th style={styles.th}>Rule</th><th style={styles.th}>Severity</th><th style={styles.th}>Status</th><th style={styles.th}>Time</th><th style={styles.th}></th></tr></thead>
+          <tbody>
+            {filtered.map(a => (
+              <tr key={a.id} style={{ cursor: "pointer" }} onClick={() => setPage("alert-detail")}>
+                <td style={{ ...styles.td, fontFamily: T.mono, fontSize: "12px" }}>{a.id}</td><td style={{ ...styles.td, fontWeight: 500 }}>{a.zone}</td><td style={styles.td}>{a.type}</td><td style={{ ...styles.td, fontFamily: T.mono }}>{a.value}</td><td style={{ ...styles.td, fontSize: "12px", color: T.textSecondary }}>{a.rule}</td>
+                <td style={styles.td}><span style={styles.badge(a.severity === "critical" ? "error" : a.severity === "warning" ? "warning" : "info")}>{a.severity}</span></td>
+                <td style={styles.td}><span style={styles.badge(a.status === "active" ? "error" : a.status === "acknowledged" ? "warning" : "success")}>{a.status}</span></td>
+                <td style={{ ...styles.td, color: T.textMuted, fontSize: "12px" }}>{a.time}</td><td style={styles.td}><Icon name="chevron" size={14} color={T.textMuted} /></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
+// ─── Page: Alert Detail ───
+const AlertDetailPage = ({ setPage, role }) => {
+  const alert = MOCK.alerts[0];
+  return (
+    <div style={styles.container}>
+      <div style={{ padding: "32px 0 8px" }}><span style={{ fontSize: "13px", color: T.textSecondary, cursor: "pointer" }} onClick={() => setPage("alerts")}>← Back to alerts</span></div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "24px" }}>
+        <div>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}><h1 style={styles.h1}>{alert.id}</h1><span style={styles.badge("error")}>{alert.severity}</span><span style={styles.badge("error")}>{alert.status}</span></div>
+          <p style={{ color: T.textSecondary, marginTop: "4px" }}>{alert.type} violation in {alert.zone}</p>
+        </div>
+        <div style={{ display: "flex", gap: "8px" }}>
+          {role === "admin" && <button style={styles.btn()}><Icon name="edit" size={14} /> Edit</button>}
+          <button style={styles.btn("primary")} onClick={() => setPage("alerts")}><Icon name="check" size={14} /> Acknowledge</button>
+        </div>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "24px" }}>
+        <div style={styles.card}>
+          <h3 style={{ ...styles.h3, marginBottom: "16px" }}>Alert Details</h3>
+          {[["Zone", alert.zone], ["Type", alert.type], ["Triggered Value", alert.value], ["Rule Violated", alert.rule], ["Triggered", alert.time], ["Sensor", "SN-051"], ["Status", alert.status]].map(([k, v], i) => (
+            <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: `1px solid ${T.border}` }}><span style={{ fontSize: "13px", color: T.textSecondary }}>{k}</span><span style={{ fontSize: "13px", fontWeight: 500 }}>{v}</span></div>
+          ))}
+        </div>
+        <div style={styles.card}>
+          <h3 style={{ ...styles.h3, marginBottom: "16px" }}>Suggested Actions</h3>
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            {["Issue public air quality advisory for West End zone", "Deploy mobile AQ monitoring unit to verify readings", "Notify public health department of threshold breach", "Check sensor SN-051 calibration status"].map((action, i) => (
+              <div key={i} style={{ padding: "10px 14px", borderRadius: T.radius, background: T.bgHover, border: `1px solid ${T.border}`, fontSize: "13px", display: "flex", alignItems: "flex-start", gap: "8px" }}><span style={{ color: T.accent, marginTop: "1px" }}>→</span>{action}</div>
+            ))}
+          </div>
+        </div>
+      </div>
+      <div style={{ ...styles.card, marginBottom: "48px" }}>
+        <h3 style={{ ...styles.h3, marginBottom: "16px" }}>Historical Trend — {alert.type}</h3>
+        <Sparkline data={[65, 72, 78, 85, 92, 98, 105, 102, 108, 105]} color={T.error} width={1000} height={80} />
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", color: T.textMuted, marginTop: "4px" }}><span>6h ago</span><span>Now</span></div>
+      </div>
+    </div>
+  );
+};
+
+// ─── Page: Alert Rules ───
+const AlertRulesPage = () => {
+  const rules = [{ id: "R-001", name: "High AQI", condition: "AQI > 100", zone: "All Zones", status: "active" }, { id: "R-002", name: "Noise Violation", condition: "Noise > 80 dB", zone: "All Zones", status: "active" }, { id: "R-003", name: "Heat Warning", condition: "Temp > 30°C", zone: "All Zones", status: "active" }, { id: "R-004", name: "Low Humidity", condition: "Humidity < 20%", zone: "Industrial Park", status: "paused" }];
+  const [showCreate, setShowCreate] = useState(false);
+  return (
+    <div style={styles.container}>
+      <div style={{ padding: "32px 0 24px", display: "flex", justifyContent: "space-between", alignItems: "center" }}><h1 style={styles.h1}>Alert Rules</h1><button style={styles.btn("primary")} onClick={() => setShowCreate(!showCreate)}><Icon name="plus" size={14} /> Create Rule</button></div>
+      {showCreate && (
+        <div style={{ ...styles.card, marginBottom: "16px" }}>
+          <h3 style={{ ...styles.h3, marginBottom: "16px" }}>New Alert Rule</h3>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+            <div><label style={styles.label}>Rule Name</label><input style={styles.input} placeholder="e.g. High AQI Warning" /></div>
+            <div><label style={styles.label}>Zone</label><select style={{ ...styles.input, cursor: "pointer" }}><option>All Zones</option>{MOCK.zones.map(z => <option key={z.id}>{z.name}</option>)}</select></div>
+            <div><label style={styles.label}>Metric</label><select style={{ ...styles.input, cursor: "pointer" }}><option>Air Quality (AQI)</option><option>Temperature (°C)</option><option>Humidity (%)</option><option>Noise (dB)</option></select></div>
+            <div><label style={styles.label}>Threshold</label><input style={styles.input} type="number" placeholder="100" /></div>
+          </div>
+          <div style={{ display: "flex", gap: "8px", marginTop: "16px", justifyContent: "flex-end" }}><button style={styles.btn()} onClick={() => setShowCreate(false)}>Cancel</button><button style={styles.btn("primary")}>Create Rule</button></div>
+        </div>
+      )}
+      <div style={styles.card}>
+        <table style={styles.table}>
+          <thead><tr><th style={styles.th}>ID</th><th style={styles.th}>Name</th><th style={styles.th}>Condition</th><th style={styles.th}>Zone</th><th style={styles.th}>Status</th><th style={styles.th}></th></tr></thead>
+          <tbody>
+            {rules.map(r => (<tr key={r.id}><td style={{ ...styles.td, fontFamily: T.mono, fontSize: "12px" }}>{r.id}</td><td style={{ ...styles.td, fontWeight: 500 }}>{r.name}</td><td style={{ ...styles.td, fontFamily: T.mono, fontSize: "12px" }}>{r.condition}</td><td style={styles.td}>{r.zone}</td><td style={styles.td}><span style={styles.badge(r.status === "active" ? "success" : "default")}>{r.status}</span></td><td style={{ ...styles.td, display: "flex", gap: "8px" }}><Icon name="edit" size={14} color={T.textMuted} /><Icon name="trash" size={14} color={T.textMuted} /></td></tr>))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
+// ─── Page: Sensors ───
+const SensorsPage = () => (
+  <div style={styles.container}>
+    <div style={{ padding: "32px 0 24px" }}><h1 style={styles.h1}>Sensors</h1><p style={{ color: T.textSecondary, marginTop: "4px" }}>IoT device status and management</p></div>
+    <div style={styles.card}>
+      <table style={styles.table}>
+        <thead><tr><th style={styles.th}>Sensor ID</th><th style={styles.th}>Zone</th><th style={styles.th}>Type</th><th style={styles.th}>Status</th><th style={styles.th}>Last Ping</th><th style={styles.th}>Battery</th></tr></thead>
+        <tbody>
+          {MOCK.sensors.map(s => (
+            <tr key={s.id}><td style={{ ...styles.td, fontFamily: T.mono, fontWeight: 500 }}>{s.id}</td><td style={styles.td}>{s.zone}</td><td style={styles.td}>{s.type}</td><td style={styles.td}><span style={styles.badge(s.status === "online" ? "success" : "error")}>{s.status}</span></td><td style={{ ...styles.td, color: T.textSecondary, fontSize: "12px" }}>{s.lastPing}</td>
+              <td style={styles.td}><div style={{ display: "flex", alignItems: "center", gap: "8px" }}><div style={{ width: "48px", height: "4px", borderRadius: "2px", background: T.border, overflow: "hidden" }}><div style={{ width: s.battery, height: "100%", borderRadius: "2px", background: parseInt(s.battery) > 50 ? T.success : parseInt(s.battery) > 20 ? T.warning : T.error }} /></div><span style={{ fontSize: "12px", color: T.textSecondary }}>{s.battery}</span></div></td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </div>
+);
+
+// ─── Page: Rankings ───
+const RankingsPage = () => {
+  const [sortBy, setSortBy] = useState("aqi");
+  const [search, setSearch] = useState("");
+  const sorted = [...MOCK.cities].filter(c => c.name.toLowerCase().includes(search.toLowerCase())).sort((a, b) => a[sortBy] - b[sortBy]);
+  return (
+    <div style={styles.container}>
+      <div style={{ padding: "32px 0 24px" }}><h1 style={styles.h1}>City Rankings</h1><p style={{ color: T.textSecondary, marginTop: "4px" }}>Environmental quality rankings across Canadian cities</p></div>
+      <div style={{ display: "flex", gap: "12px", marginBottom: "16px" }}>
+        <div style={{ position: "relative", flex: 1 }}><Icon name="search" size={14} color={T.textMuted} style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)" }} /><input style={{ ...styles.input, paddingLeft: "36px" }} placeholder="Search cities..." value={search} onChange={e => setSearch(e.target.value)} /></div>
+        <div style={{ display: "flex", gap: "4px" }}>{[{ key: "aqi", label: "AQI" }, { key: "temp", label: "Temp" }, { key: "noise", label: "Noise" }, { key: "humidity", label: "Humidity" }].map(f => (<button key={f.key} style={{ ...styles.btn(sortBy === f.key ? "primary" : "default"), fontSize: "12px" }} onClick={() => setSortBy(f.key)}>{f.label}</button>))}</div>
+      </div>
+      <div style={styles.card}>
+        <table style={styles.table}>
+          <thead><tr><th style={styles.th}>#</th><th style={styles.th}>City</th><th style={{ ...styles.th, cursor: "pointer" }} onClick={() => setSortBy("aqi")}>AQI {sortBy === "aqi" && "↑"}</th><th style={{ ...styles.th, cursor: "pointer" }} onClick={() => setSortBy("temp")}>Temp {sortBy === "temp" && "↑"}</th><th style={{ ...styles.th, cursor: "pointer" }} onClick={() => setSortBy("noise")}>Noise {sortBy === "noise" && "↑"}</th><th style={{ ...styles.th, cursor: "pointer" }} onClick={() => setSortBy("humidity")}>Humidity {sortBy === "humidity" && "↑"}</th></tr></thead>
+          <tbody>
+            {sorted.map((c, i) => (<tr key={c.name}><td style={{ ...styles.td, fontWeight: 600, color: i < 3 ? T.accent : T.textSecondary }}>{i + 1}</td><td style={{ ...styles.td, fontWeight: 500 }}>{c.name}</td><td style={{ ...styles.td, fontFamily: T.mono }}><span style={{ color: c.aqi < 35 ? T.success : c.aqi < 55 ? T.warning : T.error }}>{c.aqi}</span></td><td style={{ ...styles.td, fontFamily: T.mono }}>{c.temp}°C</td><td style={{ ...styles.td, fontFamily: T.mono }}>{c.noise} dB</td><td style={{ ...styles.td, fontFamily: T.mono }}>{c.humidity}%</td></tr>))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
+// ─── Page: Accounts ───
+const AccountsPage = () => {
+  const [showCreate, setShowCreate] = useState(false);
+  return (
+    <div style={styles.container}>
+      <div style={{ padding: "32px 0 24px", display: "flex", justifyContent: "space-between", alignItems: "center" }}><h1 style={styles.h1}>Accounts</h1><button style={styles.btn("primary")} onClick={() => setShowCreate(!showCreate)}><Icon name="plus" size={14} /> Create Account</button></div>
+      {showCreate && (
+        <div style={{ ...styles.card, marginBottom: "16px" }}>
+          <h3 style={{ ...styles.h3, marginBottom: "16px" }}>New Account</h3>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px" }}>
+            <div><label style={styles.label}>Email</label><input style={styles.input} placeholder="user@scemas.ca" /></div>
+            <div><label style={styles.label}>Password</label><input style={styles.input} type="password" placeholder="••••••••" /></div>
+            <div><label style={styles.label}>Role</label><select style={{ ...styles.input, cursor: "pointer" }}><option>Operator</option><option>Administrator</option></select></div>
+          </div>
+          <div style={{ display: "flex", gap: "8px", marginTop: "16px", justifyContent: "flex-end" }}><button style={styles.btn()} onClick={() => setShowCreate(false)}>Cancel</button><button style={styles.btn("primary")}>Create</button></div>
+        </div>
+      )}
+      <div style={styles.card}>
+        <table style={styles.table}>
+          <thead><tr><th style={styles.th}>Email</th><th style={styles.th}>Role</th><th style={styles.th}>Created</th><th style={styles.th}>Last Login</th><th style={styles.th}></th></tr></thead>
+          <tbody>
+            {MOCK.accounts.map(a => (<tr key={a.email}><td style={{ ...styles.td, fontWeight: 500 }}>{a.email}</td><td style={styles.td}><span style={styles.badge(a.role === "Administrator" ? "info" : "default")}>{a.role}</span></td><td style={{ ...styles.td, color: T.textSecondary, fontSize: "12px" }}>{a.created}</td><td style={{ ...styles.td, color: T.textSecondary, fontSize: "12px" }}>{a.lastLogin}</td><td style={{ ...styles.td, display: "flex", gap: "8px" }}><Icon name="edit" size={14} color={T.textMuted} /><Icon name="trash" size={14} color={T.textMuted} /></td></tr>))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
+// ─── Page: Edit Account ───
+const EditAccountPage = () => (
+  <div style={styles.container}>
+    <div style={{ padding: "32px 0 24px" }}><h1 style={styles.h1}>Account Settings</h1></div>
+    <div style={{ maxWidth: "600px" }}>
+      <div style={styles.card}>
+        <h3 style={{ ...styles.h3, marginBottom: "16px" }}>Profile</h3>
+        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+          <div><label style={styles.label}>Email</label><input style={styles.input} value="operator1@scemas.ca" readOnly /></div>
+          <div><label style={styles.label}>Role</label><input style={styles.input} value="Operator" readOnly /></div>
+        </div>
+      </div>
+      <div style={{ ...styles.card, marginTop: "16px" }}>
+        <h3 style={{ ...styles.h3, marginBottom: "16px" }}>Change Password</h3>
+        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+          <div><label style={styles.label}>Current Password</label><input style={styles.input} type="password" placeholder="••••••••" /></div>
+          <div><label style={styles.label}>New Password</label><input style={styles.input} type="password" placeholder="Minimum 8 characters" /></div>
+          <div><label style={styles.label}>Confirm New Password</label><input style={styles.input} type="password" placeholder="Repeat new password" /></div>
+        </div>
+        <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "16px" }}><button style={styles.btn("primary")}>Update Password</button></div>
+      </div>
+      <div style={{ ...styles.card, marginTop: "16px", marginBottom: "48px" }}>
+        <h3 style={{ ...styles.h3, marginBottom: "16px" }}>Preferences</h3>
+        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+          <div><label style={styles.label}>Language</label><select style={{ ...styles.input, cursor: "pointer" }}><option>English</option><option>Français</option></select></div>
+          <div><label style={styles.label}>Units</label><select style={{ ...styles.input, cursor: "pointer" }}><option>Metric (°C, km)</option><option>Imperial (°F, mi)</option></select></div>
+          <div><label style={styles.label}>Alert Notifications</label><select style={{ ...styles.input, cursor: "pointer" }}><option>Enabled</option><option>Disabled</option></select></div>
+        </div>
+        <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "16px" }}><button style={styles.btn("primary")}>Save Preferences</button></div>
+      </div>
+    </div>
+  </div>
+);
+
+// ─── Page: Audit Log ───
+const AuditLogPage = () => (
+  <div style={styles.container}>
+    <div style={{ padding: "32px 0 24px" }}><h1 style={styles.h1}>Audit Log</h1><p style={{ color: T.textSecondary, marginTop: "4px" }}>System activity and change history</p></div>
+    <div style={styles.card}>
+      <table style={styles.table}>
+        <thead><tr><th style={styles.th}>Time</th><th style={styles.th}>User</th><th style={styles.th}>Action</th><th style={styles.th}>Detail</th></tr></thead>
+        <tbody>
+          {MOCK.auditLogs.map((l, i) => (<tr key={i}><td style={{ ...styles.td, fontFamily: T.mono, fontSize: "12px", color: T.textSecondary, whiteSpace: "nowrap" }}>{l.time}</td><td style={{ ...styles.td, fontSize: "12px" }}>{l.user}</td><td style={{ ...styles.td, fontWeight: 500 }}>{l.action}</td><td style={{ ...styles.td, color: T.textSecondary }}>{l.detail}</td></tr>))}
+        </tbody>
+      </table>
+    </div>
+  </div>
+);
+
+// ─── Page: API Docs ───
+const ApiDocsPage = () => (
+  <div style={styles.container}>
+    <div style={{ padding: "32px 0 24px" }}><h1 style={styles.h1}>Public API</h1><p style={{ color: T.textSecondary, marginTop: "4px" }}>REST API documentation for third-party integrations</p></div>
+    <div style={{ ...styles.card, marginBottom: "16px" }}>
+      <h3 style={{ ...styles.h3, marginBottom: "12px" }}>Base URL</h3>
+      <div style={{ padding: "10px 14px", borderRadius: T.radius, background: T.bgHover, fontFamily: T.mono, fontSize: "13px", border: `1px solid ${T.border}` }}>https://api.scemas.ca/v1</div>
+      <div style={{ marginTop: "12px", fontSize: "13px", color: T.textSecondary }}>All requests require an API key via the <code style={{ fontFamily: T.mono, background: T.bgHover, padding: "1px 4px", borderRadius: "3px" }}>X-API-Key</code> header. Rate limited to 100 requests per minute.</div>
+    </div>
+    <div style={{ ...styles.card, marginBottom: "16px" }}>
+      <h3 style={{ ...styles.h3, marginBottom: "16px" }}>Endpoints</h3>
+      <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+        {MOCK.apiEndpoints.map((ep, i) => (
+          <div key={i} style={{ padding: "12px 16px", borderRadius: T.radius, border: `1px solid ${T.border}`, display: "flex", alignItems: "center", gap: "12px" }}>
+            <span style={{ padding: "2px 8px", borderRadius: "4px", background: T.successBg, color: T.success, fontFamily: T.mono, fontSize: "11px", fontWeight: 600 }}>{ep.method}</span>
+            <span style={{ fontFamily: T.mono, fontSize: "13px", fontWeight: 500 }}>{ep.path}</span>
+            <span style={{ fontSize: "13px", color: T.textSecondary, marginLeft: "auto" }}>{ep.desc}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+    <div style={{ ...styles.card, marginBottom: "48px" }}>
+      <h3 style={{ ...styles.h3, marginBottom: "12px" }}>Example Response</h3>
+      <pre style={{ padding: "16px", borderRadius: T.radius, background: T.bgHover, fontFamily: T.mono, fontSize: "12px", lineHeight: "1.6", border: `1px solid ${T.border}`, overflow: "auto", color: T.textSecondary, margin: 0 }}>
+{`{
+  "zone_id": "z1",
+  "zone_name": "Downtown Core",
+  "timestamp": "2026-04-03T14:30:00Z",
+  "metrics": {
+    "aqi": 42,
+    "temperature_c": 18,
+    "humidity_pct": 62,
+    "noise_db": 68
+  },
+  "status": "good"
+}`}
+      </pre>
+    </div>
+  </div>
+);
+
+// ─── Main App ───
+export default function App() {
+  const [page, setPage] = useState("login");
+  const [role, setRole] = useState(null);
+
+  const handleLogin = (r) => { setRole(r); setPage(r === "public" ? "public" : "dashboard"); };
+  const handleLogout = () => { setPage("login"); setRole(null); };
+
+  if (page === "login") return <LoginPage onLogin={handleLogin} />;
+  if (page === "create-account") return <CreateAccountPage setPage={setPage} />;
+
+  const renderPage = () => {
+    switch (page) {
+      case "public": return <PublicPage />;
+      case "dashboard": return <DashboardPage role={role} setPage={setPage} />;
+      case "alerts": return <AlertsPage setPage={setPage} />;
+      case "alert-detail": return <AlertDetailPage setPage={setPage} role={role} />;
+      case "alert-rules": return <AlertRulesPage />;
+      case "sensors": return <SensorsPage />;
+      case "rankings": return <RankingsPage />;
+      case "accounts": return <AccountsPage />;
+      case "account-edit": return <EditAccountPage />;
+      case "audit": return <AuditLogPage />;
+      case "api-docs": return <ApiDocsPage />;
+      default: return <PublicPage />;
+    }
+  };
+
+  return (
+    <div style={styles.page}>
+      <Navbar page={page} setPage={setPage} role={role} onLogout={handleLogout} />
+      {renderPage()}
+    </div>
+  );
+}
