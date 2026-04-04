@@ -28,14 +28,12 @@ export default function RootLayout({
     <html
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-      // Browser extensions (Dark Reader, Grammarly, password managers, etc.)
-      // commonly inject attributes onto <html> before React hydrates, which
-      // triggers a hydration mismatch warning. Scoping this to the single
-      // <html> element neutralizes the extension noise without masking any
-      // mismatches inside the tree.
       suppressHydrationWarning
     >
-      <body className="min-h-full bg-bg text-sm text-text">
+      <body
+        className="min-h-full bg-bg text-sm text-text"
+        suppressHydrationWarning
+      >
         <AuthProvider>{children}</AuthProvider>
       </body>
     </html>

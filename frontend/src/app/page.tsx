@@ -1,21 +1,29 @@
-import Link from "next/link";
+"use client";
 
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+import { useAuth } from "@/lib/auth/AuthContext";
+
+/**
+ * Root landing: once the AuthContext finishes reading localStorage, route
+ * the visitor to the right entry point for their role. Nothing is rendered
+ * because the redirect fires immediately — keeping this page empty avoids a
+ * flash of placeholder content during the client-side hydration round-trip.
+ */
 export default function Home() {
-  return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-bg text-text">
-      <h1 className="text-3xl font-bold tracking-tight">SCEMAS</h1>
-      <p className="text-text-secondary">
-        Smart City Environmental Monitoring & Alert System
-      </p>
-      <p className="text-sm text-text-muted">
-        Scaffold ready — milestones coming online.
-      </p>
-      <Link
-        href="/login"
-        className="text-sm text-accent hover:text-accent-hover"
-      >
-        Continue →
-      </Link>
-    </main>
-  );
+  const router = useRouter();
+  const { role, loading } = useAuth();
+
+  useEffect(() => {
+    if (loading) return;
+    if (!role) {
+      router.replace("/login");
+    } else if (role === "public") {
+      router.replace("/overview");
+    } else {
+      router.replace("/dashboard");
+    }
+  }, [loading, role, router]);
+
+  return null;
 }
