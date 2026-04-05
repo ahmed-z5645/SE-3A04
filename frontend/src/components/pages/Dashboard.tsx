@@ -1,0 +1,293 @@
+"use client";
+
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import { Badge, Button, Card, Gauge, Icon, Sparkline } from "@/components/ui";
+import { useAuth } from "@/lib/auth/AuthContext";
+import {
+  alertsApi,
+  zonesApi,
+  type Alert,
+  type TrendSeries,
+} from "@/lib/api";
+
+interface Stat {
+  label: string;
+  value: string;
+  variant: "success" | "warning" | "error" | "info";
+}
+
+const STATS: Stat[] = [
+  { label: "Active Alerts", value: "2", variant: "error" },
+  { label: "Sensors Online", value: "5/6", variant: "success" },
+  { label: "Zones Monitored", value: "6", variant: "info" },
+  { label: "Avg. AQI", value: "47", variant: "warning" },
+  { label: "Uptime", value: "99.8%", variant: "success" },
+];
+
+const MAP_PINS = [
+  { x: 250, y: 60, color: "var(--success)", label: "Downtown" },
+  { x: 140, y: 120, color: "var(--success)", label: "Harbour" },
+  { x: 380, y: 90, color: "var(--warning)", label: "Industrial" },
+  { x: 80, y: 180, color: "var(--success)", label: "Riverside" },
+  { x: 320, y: 170, color: "var(--error)", label: "West End" },
+  { x: 440, y: 180, color: "var(--success)", label: "Uptown" },
+];
+
+interface TrendSpec {
+  label: string;
+  data: keyof TrendSeries;
+  color: string;
+  val: string;
+}
+
+const TRENDS: TrendSpec[] = [
+  { label: "Air Quality Index", data: "aqi", color: "var(--warning)", val: "42" },
+  { label: "Temperature (°C)", data: "temp", color: "var(--accent)", val: "18" },
+  { label: "Humidity (%)", data: "humidity", color: "var(--accent)", val: "62" },
+  { label: "Noise (dB)", data: "noise", color: "var(--warning)", val: "68" },
+];
+
+export function Dashboard() {
+  const { role } = useAuth();
+  const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [trends, setTrends] = useState<TrendSeries | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    void Promise.all([
+      alertsApi.listAlerts("active"),
+      zonesApi.getTrends(),
+    ]).then(([a, t]) => {
+      if (cancelled) return;
+      setAlerts(a);
+      setTrends(t);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  return (
+    <div className="mx-auto max-w-[1200px] px-6">
+      <header className="flex items-center justify-between py-8 pb-6">
+        <div>
+          <h1 className="text-3xl font-bold tracking-[-0.04em]">Dashboard</h1>
+          <p className="mt-1 text-text-secondary">
+            System overview and real-time monitoring
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Link href="/sensors">
+            <Button>
+              <Icon name="database" size={14} /> Sensors
+            </Button>
+          </Link>
+          {role === "admin" && (
+            <Link href="/rules">
+              <Button variant="primary">
+                <Icon name="plus" size={14} /> New Rule
+              </Button>
+            </Link>
+          )}
+        </div>
+      </header>
+
+      {/* ── Stat Row ── */}
+      <div className="mb-6 grid grid-cols-5 gap-3">
+        {STATS.map((s) => (
+          <Card key={s.label}>
+            <div className="mb-1.5 text-xs text-text-secondary">{s.label}</div>
+            <div className="flex items-center gap-2">
+              <span className="text-2xl font-bold tracking-[-0.03em]">
+                {s.value}
+              </span>
+              <Badge variant={s.variant}>●</Badge>
+            </div>
+          </Card>
+        ))}
+      </div>
+
+      {/* ── Gauges ── */}
+      <Card className="mb-4">
+        <h3 className="mb-4 text-base font-semibold tracking-[-0.01em]">
+          Current Readings — Downtown Core
+        </h3>
+        <div className="flex justify-around py-2">
+          <Gauge
+            value={42}
+            max={200}
+            label="Air Quality"
+            unit="AQI"
+            color="var(--success)"
+          />
+          <Gauge
+            value={18}
+            max={45}
+            label="Temperature"
+            unit="°C"
+            color="var(--accent)"
+          />
+          <Gauge
+            value={62}
+            max={100}
+            label="Humidity"
+            unit="%"
+            color="var(--accent)"
+          />
+          <Gauge
+            value={68}
+            max={120}
+            label="Noise Level"
+            unit="dB"
+            color="var(--warning)"
+          />
+        </div>
+      </Card>
+
+      {/* ── Sensor Map + Active Alerts ── */}
+      <div className="mb-6 grid grid-cols-[1.4fr_1fr] gap-4">
+        <Card className="min-h-[280px]">
+          <h3 className="mb-3 text-base font-semibold tracking-[-0.01em]">
+            Sensor Map
+          </h3>
+          <div className="relative h-[240px] overflow-hidden rounded-md border border-border-default bg-[#0d1117]">
+            <svg
+              width="100%"
+              height="100%"
+              viewBox="0 0 500 240"
+              preserveAspectRatio="xMidYMid meet"
+              className="absolute inset-0"
+            >
+              {Array.from({ length: 18 }).map((_, i) => (
+                <line
+                  key={`h${i}`}
+                  x1="0"
+                  y1={i * 14}
+                  x2="500"
+                  y2={i * 14}
+                  stroke="var(--border)"
+                  strokeWidth="0.5"
+                />
+              ))}
+              {Array.from({ length: 36 }).map((_, i) => (
+                <line
+                  key={`v${i}`}
+                  x1={i * 14}
+                  y1="0"
+                  x2={i * 14}
+                  y2="240"
+                  stroke="var(--border)"
+                  strokeWidth="0.5"
+                />
+              ))}
+              {MAP_PINS.map((p) => (
+                <g key={p.label}>
+                  <circle
+                    cx={p.x}
+                    cy={p.y}
+                    r="16"
+                    fill={p.color}
+                    opacity="0.12"
+                  />
+                  <circle cx={p.x} cy={p.y} r="5" fill={p.color} />
+                  <text
+                    x={p.x}
+                    y={p.y - 12}
+                    textAnchor="middle"
+                    fill="var(--text-secondary)"
+                    fontSize="8"
+                  >
+                    {p.label}
+                  </text>
+                </g>
+              ))}
+            </svg>
+          </div>
+        </Card>
+
+        <Card>
+          <div className="mb-3 flex items-center justify-between">
+            <h3 className="text-base font-semibold tracking-[-0.01em]">
+              Active Alerts
+            </h3>
+            <Link
+              href="/alerts"
+              className="text-xs text-accent hover:underline"
+            >
+              View all →
+            </Link>
+          </div>
+          <div className="flex flex-col gap-2">
+            {alerts.length === 0 && (
+              <div className="text-[13px] text-text-muted">
+                No active alerts.
+              </div>
+            )}
+            {alerts.map((a) => {
+              const critical = a.severity === "critical";
+              return (
+                <Link
+                  key={a.id}
+                  href={`/alerts/${a.id}`}
+                  className={`block rounded-md border px-3 py-2.5 ${
+                    critical
+                      ? "border-error-border bg-error-bg"
+                      : "border-warning-border bg-warning-bg"
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Icon
+                        name="alert"
+                        size={14}
+                        color={
+                          critical ? "var(--error)" : "var(--warning)"
+                        }
+                      />
+                      <span className="text-[13px] font-medium">{a.id}</span>
+                    </div>
+                    <Badge variant={critical ? "error" : "warning"}>
+                      {a.severity}
+                    </Badge>
+                  </div>
+                  <div className="ml-[22px] mt-1 text-xs text-text-secondary">
+                    {a.type} in {a.zone} · {a.value}
+                  </div>
+                  <div className="ml-[22px] mt-0.5 text-[11px] text-text-muted">
+                    {a.time}
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </Card>
+      </div>
+
+      {/* ── Trend Overview ── */}
+      <Card className="mb-12">
+        <h3 className="mb-4 text-base font-semibold tracking-[-0.01em]">
+          Trend Overview (24h)
+        </h3>
+        <div className="grid grid-cols-4 gap-6">
+          {TRENDS.map((t) => (
+            <div key={t.label}>
+              <div className="mb-2 flex justify-between">
+                <span className="text-xs text-text-secondary">{t.label}</span>
+                <span className="text-[13px] font-semibold">{t.val}</span>
+              </div>
+              {trends && (
+                <Sparkline
+                  data={trends[t.data]}
+                  color={t.color}
+                  width={240}
+                  height={40}
+                />
+              )}
+            </div>
+          ))}
+        </div>
+      </Card>
+    </div>
+  );
+}
