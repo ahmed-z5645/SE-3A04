@@ -72,3 +72,64 @@ class SensorController:
 
     def get_hourly_low(self, zone: str, metric: str):
         return self._compute_low(zone, metric, time=60)
+
+
+    # Returns a list of sensor dicts, the first index being rank 1
+    def get_sensor_rankings(self, filter: str) -> list:
+        rankings = []
+        data = self.sensor_db.get_recent_data()
+        for sensor_a in data.values():
+            # if filter == sensor_a["metric"]:
+            if filter == sensor_a.metric:
+                if len(rankings) == 0:
+                    rankings.append(sensor_a.to_dict())
+                    continue
+                for i in range(len(rankings)):
+                    sensor_b = rankings[i]
+                    # if sensor_a["value"] <= sensor_b["value"]:
+                    if sensor_a.value <= sensor_b["value"]:
+                        rankings.insert(i, sensor_a.to_dict())
+                        break
+                    elif i+1 == len(rankings):
+                        rankings.append(sensor_a.to_dict())
+                        break
+        return rankings
+
+
+    # returns a list of all the city sensors
+    def get_city_sensors(self, city: str) -> list:
+        sensors = []
+        data = self.sensor_db.get_recent_data()
+        for sensor in data.values():
+            if sensor.city == city:
+                sensors.append(sensor.to_dict())
+        return sensors
+
+
+    # Returns empty dictionary if can't find specific
+    def get_city_sensor(self, city: str, filter: str) -> dict:
+        data = self.sensor_db.get_recent_data()
+        for sensor in data.values():
+            if sensor.city == city:
+                if sensor.metric == filter:
+                    return sensor.to_dict()
+        return {}
+
+
+    # This just returns a list of city names with index 0 being the best
+    def get_city_rankings(self, filter: str) -> list:
+        city_ranks = []
+        senor_ranks = self.get_sensor_rankings(filter)
+        for sensor in senor_ranks:
+            city_ranks.append(sensor["city"])
+        return city_ranks
+
+
+    # Returns city rank based on metric, -1 is error
+    def get_city_rank(self, city: str, filter: str) -> int:
+        rankings = self.get_sensor_rankings(filter)
+        for i in range(len(rankings)):
+            sensor = rankings[i]
+            if sensor["city"] == city:
+                return i + 1
+        return -1 # city doesn't exist
