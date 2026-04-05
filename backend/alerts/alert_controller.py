@@ -41,3 +41,7 @@ class AlertController:
                 self.alert_db.add_alert(alert)
             else:
                 log(f"OK: zone={sensor_data.zone} rule={rule.rule_id} | {rule.metric}={metric_value} {rule.operator} {rule.threshold}")
+
+    
+    def get_city_rankings(filter: str) -> list:
+        return get_rankings(sensor_db)
