@@ -2,13 +2,22 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Badge, Button, Card, Gauge, Icon, Sparkline } from "@/components/ui";
+import {
+  Badge,
+  Button,
+  Card,
+  Gauge,
+  Icon,
+  SensorMap,
+  Sparkline,
+} from "@/components/ui";
 import { useAuth } from "@/lib/auth/AuthContext";
 import {
   alertsApi,
   zonesApi,
   type Alert,
   type TrendSeries,
+  type Zone,
 } from "@/lib/api";
 
 interface Stat {
@@ -23,15 +32,6 @@ const STATS: Stat[] = [
   { label: "Zones Monitored", value: "6", variant: "info" },
   { label: "Avg. AQI", value: "47", variant: "warning" },
   { label: "Uptime", value: "99.8%", variant: "success" },
-];
-
-const MAP_PINS = [
-  { x: 250, y: 60, color: "var(--success)", label: "Downtown" },
-  { x: 140, y: 120, color: "var(--success)", label: "Harbour" },
-  { x: 380, y: 90, color: "var(--warning)", label: "Industrial" },
-  { x: 80, y: 180, color: "var(--success)", label: "Riverside" },
-  { x: 320, y: 170, color: "var(--error)", label: "West End" },
-  { x: 440, y: 180, color: "var(--success)", label: "Uptown" },
 ];
 
 interface TrendSpec {
@@ -52,16 +52,19 @@ export function Dashboard() {
   const { role } = useAuth();
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [trends, setTrends] = useState<TrendSeries | null>(null);
+  const [zones, setZones] = useState<Zone[]>([]);
 
   useEffect(() => {
     let cancelled = false;
     void Promise.all([
       alertsApi.listAlerts("active"),
       zonesApi.getTrends(),
-    ]).then(([a, t]) => {
+      zonesApi.listZones(),
+    ]).then(([a, t, z]) => {
       if (cancelled) return;
       setAlerts(a);
       setTrends(t);
+      setZones(z);
     });
     return () => {
       cancelled = true;
@@ -151,59 +154,7 @@ export function Dashboard() {
           <h3 className="mb-3 text-base font-semibold tracking-[-0.01em]">
             Sensor Map
           </h3>
-          <div className="relative h-[240px] overflow-hidden rounded-md border border-border-default bg-[#0d1117]">
-            <svg
-              width="100%"
-              height="100%"
-              viewBox="0 0 500 240"
-              preserveAspectRatio="xMidYMid meet"
-              className="absolute inset-0"
-            >
-              {Array.from({ length: 18 }).map((_, i) => (
-                <line
-                  key={`h${i}`}
-                  x1="0"
-                  y1={i * 14}
-                  x2="500"
-                  y2={i * 14}
-                  stroke="var(--border)"
-                  strokeWidth="0.5"
-                />
-              ))}
-              {Array.from({ length: 36 }).map((_, i) => (
-                <line
-                  key={`v${i}`}
-                  x1={i * 14}
-                  y1="0"
-                  x2={i * 14}
-                  y2="240"
-                  stroke="var(--border)"
-                  strokeWidth="0.5"
-                />
-              ))}
-              {MAP_PINS.map((p) => (
-                <g key={p.label}>
-                  <circle
-                    cx={p.x}
-                    cy={p.y}
-                    r="16"
-                    fill={p.color}
-                    opacity="0.12"
-                  />
-                  <circle cx={p.x} cy={p.y} r="5" fill={p.color} />
-                  <text
-                    x={p.x}
-                    y={p.y - 12}
-                    textAnchor="middle"
-                    fill="var(--text-secondary)"
-                    fontSize="8"
-                  >
-                    {p.label}
-                  </text>
-                </g>
-              ))}
-            </svg>
-          </div>
+          <SensorMap zones={zones} height={240} />
         </Card>
 
         <Card>

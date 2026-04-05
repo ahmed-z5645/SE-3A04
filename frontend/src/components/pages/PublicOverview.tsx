@@ -5,6 +5,7 @@ import {
   Badge,
   Card,
   Icon,
+  SensorMap,
   Sparkline,
   type IconName,
 } from "@/components/ui";
@@ -30,18 +31,6 @@ const METRICS: MetricSpec[] = [
   { icon: "thermometer", label: "Avg. Temp", value: "18°C", sub: "Normal", color: "var(--accent)", series: "temp" },
   { icon: "droplet", label: "Avg. Humidity", value: "62%", sub: "Normal", color: "var(--accent)", series: "humidity" },
   { icon: "volume", label: "Avg. Noise", value: "61 dB", sub: "Moderate", color: "var(--warning)", series: "noise" },
-];
-
-// Zone pins on the sensor map — matches the prototype's hand-placed layout.
-const MAP_PINS = [
-  { x: 200, y: 80, color: "var(--success)" },
-  { x: 120, y: 140, color: "var(--success)" },
-  { x: 310, y: 110, color: "var(--warning)" },
-  { x: 80, y: 200, color: "var(--success)" },
-  { x: 260, y: 180, color: "var(--error)" },
-  { x: 340, y: 200, color: "var(--success)" },
-  { x: 160, y: 60, color: "var(--success)" },
-  { x: 300, y: 230, color: "var(--text-muted)" },
 ];
 
 const LEGEND = [
@@ -129,50 +118,9 @@ export function PublicOverview() {
           <h3 className="mb-4 text-base font-semibold tracking-[-0.01em]">
             Sensor Map
           </h3>
-          <div className="relative flex-1 overflow-hidden rounded-md border border-border-default bg-[#0d1117]">
-            <svg
-              width="100%"
-              height="100%"
-              viewBox="0 0 400 280"
-              preserveAspectRatio="xMidYMid meet"
-              className="absolute inset-0"
-            >
-              {Array.from({ length: 20 }).map((_, i) => (
-                <line
-                  key={`h${i}`}
-                  x1="0"
-                  y1={i * 14}
-                  x2="400"
-                  y2={i * 14}
-                  stroke="var(--border)"
-                  strokeWidth="0.5"
-                />
-              ))}
-              {Array.from({ length: 28 }).map((_, i) => (
-                <line
-                  key={`v${i}`}
-                  x1={i * 14}
-                  y1="0"
-                  x2={i * 14}
-                  y2="280"
-                  stroke="var(--border)"
-                  strokeWidth="0.5"
-                />
-              ))}
-              {MAP_PINS.map((p, i) => (
-                <g key={i}>
-                  <circle
-                    cx={p.x}
-                    cy={p.y}
-                    r="12"
-                    fill={p.color}
-                    opacity="0.15"
-                  />
-                  <circle cx={p.x} cy={p.y} r="4" fill={p.color} />
-                </g>
-              ))}
-            </svg>
-            <div className="absolute bottom-3 left-3 flex gap-3 text-[10px]">
+          <div className="relative flex-1">
+            <SensorMap zones={zones} height={240} />
+            <div className="pointer-events-none absolute bottom-3 left-3 flex gap-3 rounded bg-[rgba(0,0,0,0.55)] px-2 py-1 text-[10px]">
               {LEGEND.map((l) => (
                 <span
                   key={l.label}

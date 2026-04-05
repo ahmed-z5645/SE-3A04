@@ -30,6 +30,10 @@ in `src/lib/api/index.ts` is flipped from `mock*` to `real*`.
 | GET | `/zones/{zoneId}` | `Zone \| 404` |
 | GET | `/zones/trends` | `TrendSeries { aqi[], temp[], humidity[], noise[] }` (24h) |
 
+**Zone payload must include `lat` and `lng`** — zone centroids used by the
+Google Maps view on `/overview` and `/dashboard`. Per architecture §LR-COMP2
+and §BE5 these are aggregated at the zone level only, not raw sensor GPS.
+
 ## Alerts — `src/lib/api/mock/alerts.ts`
 
 | Method | Path | Returns |

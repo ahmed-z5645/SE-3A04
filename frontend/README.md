@@ -15,6 +15,20 @@ Open [http://localhost:3000](http://localhost:3000). The root path redirects
 to `/login` (or straight to the appropriate home page if a session is
 persisted in localStorage).
 
+### Environment variables
+
+Copy the defaults in `.env.local`:
+
+```
+NEXT_PUBLIC_API_MODE=mock              # mock | real
+NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=       # required for the Sensor Map view
+```
+
+The Google Maps key must have the **Maps JavaScript API** enabled and an
+HTTP referrer restriction matching your dev / prod origins. Zone centroids
+come from the backend — the frontend does not handle raw sensor GPS (per
+architecture §LR-COMP2, §BE5).
+
 ## Roles and routes
 
 Auth state lives in `src/lib/auth/AuthContext.tsx` and is persisted under the

@@ -1,5 +1,6 @@
 export { Icon } from "./Icon";
 export type { IconName } from "./Icon";
+export { SensorMap } from "./SensorMap";
 export { Sparkline } from "./Sparkline";
 export { Gauge } from "./Gauge";
 export { Button } from "./Button";
