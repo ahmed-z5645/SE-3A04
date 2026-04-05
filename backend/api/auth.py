@@ -1,50 +1,53 @@
 import uuid
 from fastapi import APIRouter, HTTPException
-
-router = APIRouter()
-
-users = {
-    "admin@scemas.ca": {"email": "admin@scemas.ca", "role": "admin", "password": "admin123"},
-    "operator@scemas.ca": {"email": "operator@scemas.ca", "role": "operator", "password": "operator123"},
-}
+from backend.shared.models.account import Account
 
 
-@router.post("/login")
-def login(payload: dict):
-    email = payload.get("email", "").strip().lower()
-    password = payload.get("password", "")
-    if not email or not password:
-        raise HTTPException(status_code=400, detail="Invalid credentials")
+def create_auth_router(account_db):
+    router = APIRouter()
 
-    user = users.get(email)
-    if user and user["password"] == password:
+    @router.post("/login")
+    def login(payload: dict):
+        email = payload.get("email", "").strip().lower()
+        password = payload.get("password", "")
+        if not email or not password:
+            raise HTTPException(status_code=400, detail="Invalid credentials")
+
+        account = account_db.get(email)
+        if account and account.check_password(password):
+            return {
+                "token": f"real-{uuid.uuid4()}",
+                "role": account.role,
+                "email": account.email,
+            }
+
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+
+    @router.post("/register")
+    def register(payload: dict):
+        email = payload.get("email", "").strip().lower()
+        password = payload.get("password", "")
+        
+        if not email or len(password) < 8:
+            raise HTTPException(status_code=400, detail="Invalid registration payload")
+
+        if account_db.get(email):
+            raise HTTPException(status_code=409, detail="User already exists")
+        
+        # Determine role based on email prefix
+        role = "admin" if email.startswith("admin") else "operator"
+
+        new_account = Account(email=email, password=password, role=role)
+        account_db.add(new_account)
+        
         return {
             "token": f"real-{uuid.uuid4()}",
-            "role": user["role"],
-            "email": user["email"],
+            "role": role,
+            "email": email,
         }
 
-    raise HTTPException(status_code=401, detail="Invalid email or password")
+    @router.post("/public-session")
+    def public_session():
+        return {"token": f"real-public-{uuid.uuid4()}", "role": "public", "email": ""}
 
-
-@router.post("/register")
-def register(payload: dict):
-    email = payload.get("email", "").strip().lower()
-    password = payload.get("password", "")
-    if not email or len(password) < 8:
-        raise HTTPException(status_code=400, detail="Invalid registration payload")
-
-    if email in users:
-        raise HTTPException(status_code=409, detail="User already exists")
-
-    users[email] = {"email": email, "role": "operator", "password": password}
-    return {
-        "token": f"real-{uuid.uuid4()}",
-        "role": "operator",
-        "email": email,
-    }
-
-
-@router.post("/public-session")
-def public_session():
-    return {"token": f"real-public-{uuid.uuid4()}", "role": "public", "email": ""}
+    return router
