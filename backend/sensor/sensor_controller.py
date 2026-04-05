@@ -133,3 +133,56 @@ class SensorController:
             if sensor["city"] == city:
                 return i + 1
         return -1 # city doesn't exist
+
+
+    # Maps the frontend's sortBy vocabulary onto the metric names used in
+    # ingested sensor payloads. Keep this in sync with the City type in
+    # frontend/src/lib/api/types.ts.
+    _FRONTEND_METRIC_TO_BACKEND = {
+        "aqi": "AQI",
+        "temp": "temperature",
+        "noise": "noise",
+        "humidity": "humidity",
+    }
+
+    # Returns data shaped for the frontend GET /rankings endpoint:
+    #   City[] where City = { rank, name, aqi, temp, noise, humidity }
+    # sort_by is the frontend vocabulary (aqi|temp|noise|humidity).
+    # search is a case-insensitive substring match on city name.
+    def get_rankings(self, sort_by: str = "aqi", search: str = "") -> list:
+        if sort_by not in self._FRONTEND_METRIC_TO_BACKEND:
+            sort_by = "aqi"
+
+        # Aggregate latest reading per (city, frontend-metric-key).
+        cities: dict = {}
+        for sensor in self.sensor_db.get_recent_data().values():
+            if not sensor.city:
+                continue
+            row = cities.setdefault(sensor.city, {
+                "name": sensor.city,
+                "aqi": 0,
+                "temp": 0,
+                "noise": 0,
+                "humidity": 0,
+            })
+            for fe_key, be_key in self._FRONTEND_METRIC_TO_BACKEND.items():
+                if sensor.metric == be_key:
+                    row[fe_key] = sensor.value
+                    break
+
+        rows = list(cities.values())
+
+        # Search filter on city name (case-insensitive substring).
+        query = (search or "").strip().lower()
+        if query:
+            rows = [r for r in rows if query in r["name"].lower()]
+
+        # Ascending sort — lower is better for AQI/noise; frontend's mock
+        # sorts ascending for all four metrics, so match that.
+        rows.sort(key=lambda r: r[sort_by])
+
+        # Assign 1-based rank after sort.
+        for i, row in enumerate(rows):
+            row["rank"] = i + 1
+
+        return rows

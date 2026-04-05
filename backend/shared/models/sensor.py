@@ -6,10 +6,10 @@ from datetime import datetime
 class SensorData:
     id: str
     zone: str
-    city: str
     value: float
     metric: str
     timestamp: datetime
+    city: str = ""
 
     def is_valid(self) -> bool:
         """

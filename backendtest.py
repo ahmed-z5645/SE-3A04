@@ -199,6 +199,18 @@ def main():
     print(sensor_controller.get_city_rank("Los Angeles", "AQI"))
     print("==================================")
 
+    # Frontend-shaped endpoint: GET /rankings?sortBy=...&search=...
+    print("\n=== GET /rankings (frontend shape) ===")
+    print("-- sortBy=aqi, no search --")
+    for row in sensor_controller.get_rankings("aqi"):
+        print(row)
+    print("-- sortBy=temp, search='los' --")
+    for row in sensor_controller.get_rankings("temp", "los"):
+        print(row)
+    print("-- sortBy=humidity --")
+    for row in sensor_controller.get_rankings("humidity"):
+        print(row)
+
 
 if __name__ == "__main__":
     main()
