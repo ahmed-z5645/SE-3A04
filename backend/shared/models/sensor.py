@@ -9,6 +9,7 @@ class SensorData:
     value: float
     metric: str
     timestamp: datetime
+    city: str = ""
 
     def is_valid(self) -> bool:
         """
@@ -33,6 +34,7 @@ class SensorData:
             "id": self.id,
             "type": "sensor",
             "zone": self.zone,
+            "city": self.city,
             "value": self.value,
             "metric": self.metric,
             "timestamp": self.timestamp.isoformat()
@@ -44,6 +46,7 @@ class SensorData:
         return SensorData(
             id=data.get("id", ""),
             zone=data.get("zone"),
+            city=data.get("city"),
             value=float(data.get("value")),
             metric=data.get("metric"),
             timestamp=data.get("timestamp") if isinstance(data.get("timestamp"), datetime)
