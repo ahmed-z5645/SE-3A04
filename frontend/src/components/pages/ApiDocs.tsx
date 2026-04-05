@@ -4,19 +4,6 @@ import { useEffect, useState } from "react";
 import { Card } from "@/components/ui";
 import { apiDocsApi, type ApiEndpoint } from "@/lib/api";
 
-const EXAMPLE_RESPONSE = `{
-  "zone_id": "z1",
-  "zone_name": "Downtown Core",
-  "timestamp": "2026-04-03T14:30:00Z",
-  "metrics": {
-    "aqi": 42,
-    "temperature_c": 18,
-    "humidity_pct": 62,
-    "noise_db": 68
-  },
-  "status": "good"
-}`;
-
 export function ApiDocs() {
   const [endpoints, setEndpoints] = useState<ApiEndpoint[]>([]);
 
@@ -55,37 +42,48 @@ export function ApiDocs() {
         </div>
       </Card>
 
-      <Card className="mb-4">
+      <Card className="mb-12">
         <h3 className="mb-4 text-base font-semibold tracking-[-0.01em]">
           Endpoints
         </h3>
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-4">
           {endpoints.map((ep) => (
             <div
               key={ep.path}
-              className="flex items-center gap-3 rounded-md border border-border-default px-4 py-3"
+              className="rounded-md border border-border-default p-4"
             >
-              <span className="rounded-[4px] bg-success-bg px-2 py-0.5 font-mono text-[11px] font-semibold text-success">
-                {ep.method}
-              </span>
-              <span className="font-mono text-[13px] font-medium">
-                {ep.path}
-              </span>
-              <span className="ml-auto text-[13px] text-text-secondary">
+              <div className="flex items-center gap-3">
+                <span className="rounded-[4px] bg-success-bg px-2 py-0.5 font-mono text-[11px] font-semibold text-success">
+                  {ep.method}
+                </span>
+                <span className="font-mono text-[13px] font-medium">
+                  {ep.path}
+                </span>
+              </div>
+              <p className="mt-2 text-[13px] leading-relaxed text-text-secondary">
                 {ep.desc}
-              </span>
+              </p>
+
+              <div className="mt-4">
+                <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-text-secondary">
+                  Example Request
+                </div>
+                <pre className="m-0 overflow-auto rounded-md border border-border-default bg-bg-hover p-3 font-mono text-xs leading-[1.6] text-text">
+                  {ep.example}
+                </pre>
+              </div>
+
+              <div className="mt-3">
+                <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-text-secondary">
+                  Example Response
+                </div>
+                <pre className="m-0 overflow-auto rounded-md border border-border-default bg-bg-hover p-3 font-mono text-xs leading-[1.6] text-text-secondary">
+                  {ep.response}
+                </pre>
+              </div>
             </div>
           ))}
         </div>
-      </Card>
-
-      <Card className="mb-12">
-        <h3 className="mb-3 text-base font-semibold tracking-[-0.01em]">
-          Example Response
-        </h3>
-        <pre className="m-0 overflow-auto rounded-md border border-border-default bg-bg-hover p-4 font-mono text-xs leading-[1.6] text-text-secondary">
-          {EXAMPLE_RESPONSE}
-        </pre>
       </Card>
     </div>
   );
