@@ -18,6 +18,15 @@ class AlertDB:
             if a.status == "active"
         ]
 
+    def get_alerts_by_zone(self, zone: str, status: str = None):
+        filtered = [
+            a for a in self.alerts.values()
+            if a.zone == zone
+        ]
+        if status:
+            filtered = [a for a in filtered if a.status == status]
+        return filtered
+
     def update_alert(self, alert_info):
         self.alerts[alert_info.alert_id] = alert_info
         return True

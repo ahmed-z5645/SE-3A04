@@ -6,9 +6,10 @@ from backend.shared.logger import log
 
 
 class AlertController:
-    def __init__(self, alert_db, rule_db):
+    def __init__(self, alert_db, rule_db, zone_db):
         self.alert_db = alert_db
         self.rule_db = rule_db
+        self.zone_db = zone_db
 
     def process_sensor_data(self, sensor_data):
         rules = self.rule_db.get_active_rules()
@@ -39,9 +40,36 @@ class AlertController:
                 )
 
                 self.alert_db.add_alert(alert)
+                self.zone_db.recalculate_zone_status(
+                    sensor_data.zone,
+                    [a.to_dict() for a in self.alert_db.get_alerts_by_zone(sensor_data.zone, status="active")]
+                )
             else:
                 log(f"OK: zone={sensor_data.zone} rule={rule.rule_id} | {rule.metric}={metric_value} {rule.operator} {rule.threshold}")
 
-    
+    def acknowledge_alert(self, alert_id: str):
+        alert = self.alert_db.get_alert(alert_id)
+        if not alert:
+            return None
+        alert.acknowledge()
+        self.alert_db.update_alert(alert)
+        self.zone_db.recalculate_zone_status(
+            alert.zone,
+            [a.to_dict() for a in self.alert_db.get_alerts_by_zone(alert.zone, status="active")]
+        )
+        return alert
+
+    def resolve_alert(self, alert_id: str):
+        alert = self.alert_db.get_alert(alert_id)
+        if not alert:
+            return None
+        alert.resolve()
+        self.alert_db.update_alert(alert)
+        self.zone_db.recalculate_zone_status(
+            alert.zone,
+            [a.to_dict() for a in self.alert_db.get_alerts_by_zone(alert.zone, status="active")]
+        )
+        return alert
+
     def get_city_rankings(filter: str) -> list:
         return get_rankings(sensor_db)

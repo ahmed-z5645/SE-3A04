@@ -11,3 +11,6 @@ class RuleDB:
 
     def get_active_rules(self):
         return [r for r in self.rules.values() if r.active]
+
+    def delete_rule(self, rule_id: str):
+        return self.rules.pop(rule_id, None) is not None

@@ -5,9 +5,10 @@ from datetime import datetime, timedelta
 
 
 class SensorController:
-    def __init__(self, sensor_db: SensorDB, alert_controller):
+    def __init__(self, sensor_db: SensorDB, alert_controller, zone_db):
         self.sensor_db = sensor_db
         self.alert_controller = alert_controller
+        self.zone_db = zone_db
 
     def handle_message(self, raw_data: dict):
         """
@@ -29,6 +30,9 @@ class SensorController:
         # Store data
         self.sensor_db.store(sensor)
         log(f"Stored: zone={sensor.zone} metric={sensor.metric}")
+
+        # Update zone trends and current zone metrics
+        self.zone_db.record_sensor_reading(sensor.zone, sensor.metric, sensor.value)
 
         # Forward to alert system with aggregated context
         self.alert_controller.process_sensor_data(sensor)
