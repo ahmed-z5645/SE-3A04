@@ -22,14 +22,23 @@ class Alert:
         self.status = "resolved"
 
     def to_dict(self) -> dict:
+        # Derive severity from how far value exceeds threshold
+        if self.value >= self.threshold * 1.5:
+            severity = "critical"
+        elif self.value >= self.threshold:
+            severity = "warning"
+        else:
+            severity = "info"
+
         return {
             "id": self.id,
             "zone": self.zone,
-            "metric": self.metric,
-            "value": self.value,
-            "threshold": self.threshold,
+            "type": self.metric,
+            "severity": severity,
+            "value": f"{self.metric}: {self.value}",
+            "rule": f"{self.metric} > {self.threshold}",
+            "time": self.timestamp.strftime("%I:%M %p"),
             "status": self.status,
-            "timestamp": self.timestamp.isoformat()
         }
 
     @staticmethod

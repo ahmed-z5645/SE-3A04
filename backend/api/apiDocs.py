@@ -10,6 +10,6 @@ endpoints = [
 ]
 
 
-@router.get("/")
+@router.get("/endpoints")
 def get_endpoints():
     return endpoints

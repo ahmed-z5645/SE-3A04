@@ -28,8 +28,8 @@ def create_auth_router(account_db):
         email = payload.get("email", "").strip().lower()
         password = payload.get("password", "")
         
-        if not email or len(password) < 8:
-            raise HTTPException(status_code=400, detail="Invalid registration payload")
+        # if not email or len(password) < 8:
+        #     raise HTTPException(status_code=400, detail="Invalid registration payload")
 
         if account_db.get(email):
             raise HTTPException(status_code=409, detail="User already exists")

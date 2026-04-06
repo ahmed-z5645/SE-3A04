@@ -26,27 +26,20 @@ interface Stat {
   variant: "success" | "warning" | "error" | "info";
 }
 
-const STATS: Stat[] = [
-  { label: "Active Alerts", value: "2", variant: "error" },
-  { label: "Sensors Online", value: "5/6", variant: "success" },
-  { label: "Zones Monitored", value: "6", variant: "info" },
-  { label: "Avg. AQI", value: "47", variant: "warning" },
-  { label: "Uptime", value: "99.8%", variant: "success" },
-];
-
 interface TrendSpec {
   label: string;
   data: keyof TrendSeries;
   color: string;
-  val: string;
 }
 
 const TRENDS: TrendSpec[] = [
-  { label: "Air Quality Index", data: "aqi", color: "var(--warning)", val: "42" },
-  { label: "Temperature (°C)", data: "temp", color: "var(--accent)", val: "18" },
-  { label: "Humidity (%)", data: "humidity", color: "var(--accent)", val: "62" },
-  { label: "Noise (dB)", data: "noise", color: "var(--warning)", val: "68" },
+  { label: "Air Quality Index", data: "aqi", color: "var(--warning)" },
+  { label: "Temperature (°C)", data: "temp", color: "var(--accent)" },
+  { label: "Humidity (%)", data: "humidity", color: "var(--accent)" },
+  { label: "Noise (dB)", data: "noise", color: "var(--warning)" },
 ];
+
+const POLL_MS = 20_000;
 
 export function Dashboard() {
   const { role } = useAuth();
@@ -56,20 +49,41 @@ export function Dashboard() {
 
   useEffect(() => {
     let cancelled = false;
-    void Promise.all([
-      alertsApi.listAlerts("active"),
-      zonesApi.getTrends(),
-      zonesApi.listZones(),
-    ]).then(([a, t, z]) => {
-      if (cancelled) return;
-      setAlerts(a);
-      setTrends(t);
-      setZones(z);
-    });
+
+    function fetchAll() {
+      void Promise.allSettled([
+        alertsApi.listAlerts("active"),
+        zonesApi.getTrends(),
+        zonesApi.listZones(),
+      ]).then(([a, t, z]) => {
+        if (cancelled) return;
+        if (a.status === "fulfilled") setAlerts(a.value);
+        if (t.status === "fulfilled") setTrends(t.value);
+        if (z.status === "fulfilled") setZones(z.value);
+      });
+    }
+
+    fetchAll();
+    const id = setInterval(fetchAll, POLL_MS);
     return () => {
       cancelled = true;
+      clearInterval(id);
     };
   }, []);
+
+  const primary = zones.length > 0
+    ? zones.reduce((worst, z) => z.aqi > worst.aqi ? z : worst)
+    : null;
+  const avgAqi =
+    zones.length > 0
+      ? Math.round(zones.reduce((s, z) => s + z.aqi, 0) / zones.length)
+      : null;
+
+  const stats: Stat[] = [
+    { label: "Active Alerts", value: String(alerts.length), variant: alerts.length > 0 ? "error" : "success" },
+    { label: "Zones Monitored", value: String(zones.length), variant: "info" },
+    { label: "Avg. AQI", value: avgAqi !== null ? String(avgAqi) : "—", variant: "warning" },
+  ];
 
   return (
     <div className="mx-auto max-w-[1200px] px-6">
@@ -97,8 +111,8 @@ export function Dashboard() {
       </header>
 
       {/* ── Stat Row ── */}
-      <div className="mb-6 grid grid-cols-5 gap-3">
-        {STATS.map((s) => (
+      <div className="mb-6 grid grid-cols-3 gap-3">
+        {stats.map((s) => (
           <Card key={s.label}>
             <div className="mb-1.5 text-xs text-text-secondary">{s.label}</div>
             <div className="flex items-center gap-2">
@@ -114,32 +128,32 @@ export function Dashboard() {
       {/* ── Gauges ── */}
       <Card className="mb-4">
         <h3 className="mb-4 text-base font-semibold tracking-[-0.01em]">
-          Current Readings — Downtown Core
+          Current Readings — {primary ? primary.name : "Loading…"}
         </h3>
         <div className="flex justify-around py-2">
           <Gauge
-            value={42}
+            value={primary?.aqi ?? 0}
             max={200}
             label="Air Quality"
             unit="AQI"
             color="var(--success)"
           />
           <Gauge
-            value={18}
+            value={primary?.temp ?? 0}
             max={45}
             label="Temperature"
             unit="°C"
             color="var(--accent)"
           />
           <Gauge
-            value={62}
+            value={primary?.humidity ?? 0}
             max={100}
             label="Humidity"
             unit="%"
             color="var(--accent)"
           />
           <Gauge
-            value={68}
+            value={primary?.noise ?? 0}
             max={120}
             label="Noise Level"
             unit="dB"
@@ -221,22 +235,28 @@ export function Dashboard() {
           Trend Overview (24h)
         </h3>
         <div className="grid grid-cols-4 gap-6">
-          {TRENDS.map((t) => (
-            <div key={t.label}>
-              <div className="mb-2 flex justify-between">
-                <span className="text-xs text-text-secondary">{t.label}</span>
-                <span className="text-[13px] font-semibold">{t.val}</span>
+          {TRENDS.map((t) => {
+            const series = trends?.[t.data] ?? [];
+            const latest = series.length > 0 ? series[series.length - 1] : null;
+            return (
+              <div key={t.label}>
+                <div className="mb-2 flex justify-between">
+                  <span className="text-xs text-text-secondary">{t.label}</span>
+                  <span className="text-[13px] font-semibold">
+                    {latest !== null ? latest : "—"}
+                  </span>
+                </div>
+                {trends && (
+                  <Sparkline
+                    data={series}
+                    color={t.color}
+                    width={240}
+                    height={40}
+                  />
+                )}
               </div>
-              {trends && (
-                <Sparkline
-                  data={trends[t.data]}
-                  color={t.color}
-                  width={240}
-                  height={40}
-                />
-              )}
-            </div>
-          ))}
+            );
+          })}
         </div>
       </Card>
     </div>
