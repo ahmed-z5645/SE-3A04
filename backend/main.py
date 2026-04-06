@@ -45,7 +45,7 @@ sensor_controller = SensorController(sensor_db, alert_controller, zone_db)
 @app.on_event("startup")
 async def start_sensor_simulation():
     app.state.sensor_simulator_task = asyncio.create_task(
-        run_sensor_simulation(sensor_controller, interval_seconds=2.0)
+        run_sensor_simulation(sensor_controller, interval_seconds=20.0)
     )
 
 @app.on_event("shutdown")
