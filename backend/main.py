@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 import asyncio
+import uuid
 
 from fastapi.middleware.cors import CORSMiddleware
 from backend.alerts.alert_controller import AlertController
@@ -10,6 +11,7 @@ from backend.shared.db.alert_db import AlertDB
 from backend.shared.db.rule_db import RuleDB
 from backend.shared.db.zone_db import ZoneDB
 from backend.shared.db.account_db import AccountDB
+from backend.shared.models.rule import Rule
 from backend.api.alerts import create_alert_router
 from backend.api.sensors import create_sensor_router
 from backend.api.rules import create_rule_router
@@ -38,6 +40,25 @@ rule_db = RuleDB()
 zone_db = ZoneDB()
 account_db = AccountDB()
 
+
+RULES = [
+    {"id": str(uuid.uuid4()), "name": "High AQI Downtown", "zone": "Downtown Core", "condition": "AQI > 100", "status": "active"},
+    {"id": str(uuid.uuid4()), "name": "High AQI Toronto", "zone": "Toronto", "condition": "AQI > 120", "status": "active"},
+    {"id": str(uuid.uuid4()), "name": "High Temp Hamilton", "zone": "Hamilton", "condition": "Temp > 35", "status": "active"},
+    {"id": str(uuid.uuid4()), "name": "High Temp Downtown", "zone": "Downtown Core", "condition": "Temp > 33", "status": "active"},
+    {"id": str(uuid.uuid4()), "name": "Low Humidity Harbour", "zone": "Harbour District", "condition": "Humidity < 25", "status": "active"},
+    {"id": str(uuid.uuid4()), "name": "Low Humidity Mountain", "zone": "Mountain", "condition": "Humidity < 20", "status": "active"},
+    {"id": str(uuid.uuid4()), "name": "High Noise Downtown", "zone": "Downtown Core", "condition": "Noise > 85", "status": "active"},
+    {"id": str(uuid.uuid4()), "name": "High Noise Brampton", "zone": "Brampton", "condition": "Noise > 90", "status": "active"},
+    {"id": str(uuid.uuid4()), "name": "High AQI Westdale", "zone": "Westdale", "condition": "AQI > 80", "status": "active"},
+    {"id": str(uuid.uuid4()), "name": "Low Humidity Mississauga", "zone": "Mississauga", "condition": "Humidity < 30", "status": "active"},
+    {"id": str(uuid.uuid4()), "name": "High Temp Oakville", "zone": "Oakville", "condition": "Temp > 30", "status": "active"},
+    {"id": str(uuid.uuid4()), "name": "High Noise Harbour", "zone": "Harbour District", "condition": "Noise > 88", "status": "active"},
+]
+
+for rule in RULES:
+    rule_db.add_rule(Rule.from_dict(rule))
+
 # Initialize controllers
 alert_controller = AlertController(alert_db, rule_db, zone_db)
 sensor_controller = SensorController(sensor_db, alert_controller, zone_db)
@@ -45,7 +66,7 @@ sensor_controller = SensorController(sensor_db, alert_controller, zone_db)
 @app.on_event("startup")
 async def start_sensor_simulation():
     app.state.sensor_simulator_task = asyncio.create_task(
-        run_sensor_simulation(sensor_controller, interval_seconds=20.0)
+        run_sensor_simulation(sensor_controller, interval_seconds=0.5)
     )
 
 @app.on_event("shutdown")
