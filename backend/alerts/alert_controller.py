@@ -38,15 +38,15 @@ class AlertController:
                     status="active",
                     timestamp=datetime.utcnow()
                 )
-                print(alert.to_dict())
+
                 self.alert_db.add_alert(alert)
                 self.zone_db.recalculate_zone_status(
                     sensor_data.zone,
                     [a.to_dict() for a in self.alert_db.get_alerts_by_zone(sensor_data.zone, status="active")]
                 )
-                print("done")
+                
             else:
-                log(f"OK: zone={sensor_data.zone} rule={rule.rule_id} | {rule.metric}={metric_value} {rule.operator} {rule.threshold}")
+                log(f"OK: zone={sensor_data.zone} rule={rule.id} | {rule.metric}={metric_value} {rule.operator} {rule.threshold}")
 
     def acknowledge_alert(self, alert_id: str):
         alert = self.alert_db.get_alert(alert_id)
