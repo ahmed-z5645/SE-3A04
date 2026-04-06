@@ -14,7 +14,13 @@ def create_alert_router(alert_db: AlertDB, alert_controller: AlertController) ->
     @router.get("/")
     def list_alerts(status: Optional[str] = Query(None, regex="^(active|acknowledged|resolved)$")):
         alerts = alert_db.get_all_alerts()
-        return [alert for alert in alerts]
+        if status == None:
+            return [alert for alert in alerts]
+        filtered_alerts = []
+        for alert in alerts:
+            if alert.status == status:
+                filtered_alerts.append(alert)
+        return filtered_alerts
 
     @router.get("/{alert_id}")
     def get_alert(alert_id: str):
