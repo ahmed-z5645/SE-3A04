@@ -144,7 +144,7 @@ class SensorController:
     # frontend/src/lib/api/types.ts.
     _FRONTEND_METRIC_TO_BACKEND = {
         "aqi": "AQI",
-        "temp": "Temperature",
+        "temp": "Temp",
         "noise": "Noise",
         "humidity": "Humidity",
     }
