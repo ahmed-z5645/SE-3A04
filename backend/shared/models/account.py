@@ -28,8 +28,7 @@ class Account:
             password=data.get("password"),
             role=data.get("role", "operator"),
             created=data.get("created") if isinstance(data.get("created"), datetime)
-            else datetime.fromisoformat(data.get("created")),
+            else datetime.now(),
             last_login=data.get("last_login") if isinstance(data.get("last_login"), datetime)
-            else datetime.fromisoformat(data["last_login"]) if data.get("last_login")
-            else None,
+            else datetime.now()
         )

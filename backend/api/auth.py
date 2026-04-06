@@ -37,7 +37,7 @@ def create_auth_router(account_db):
         # Determine role based on email prefix
         role = "admin" if email.startswith("admin") else "operator"
 
-        new_account = Account(email=email, password=password, role=role)
+        new_account = Account.from_dict({ "email": email, "password": password, "role": role })
         account_db.add(new_account)
         
         return {
