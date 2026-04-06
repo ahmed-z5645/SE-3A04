@@ -4,10 +4,10 @@ from datetime import datetime
 from backend.shared.models.sensor import SensorData
 
 # ---------------- Sensor Profiles ----------------
-ZONES = ["West End", "Industrial Park", "Downtown Core", "Harbour District"]
+ZONES = ["Westdale", "Mountain", "Downtown Core", "Harbour District"]
 METRICS = ["AQI", "Temp", "Humidity", "Noise"]
 # CITY = "Hamilton"
-CITIES = ["Hamilton", "Toronto", "Oakville", "Brampton", "Mississauga"]
+CITIES = ["Toronto", "Oakville", "Brampton", "Mississauga"]
 
 # Sensible ranges for each metric
 METRIC_RANGES = {
@@ -21,18 +21,29 @@ METRIC_RANGES = {
 SENSOR_PROFILES = []
 profile_id = 1
 for city in CITIES:
-    for zone in ZONES:
-        for metric in METRICS:
-            min_val, max_val = METRIC_RANGES[metric]
-            SENSOR_PROFILES.append({
-                "id": f"S-{profile_id:03d}",
-                "zone": zone,
-                "city": city,
-                "metric": metric,
-                "min": min_val,
-                "max": max_val
-            })
-            profile_id += 1
+    for metric in METRICS:
+        min_val, max_val = METRIC_RANGES[metric]
+        SENSOR_PROFILES.append({
+            "id": f"S-{profile_id:03d}",
+            "zone": city,
+            "city": city,
+            "metric": metric,
+            "min": min_val,
+            "max": max_val
+        })
+        profile_id += 1
+for zone in ZONES:
+    for metric in METRICS:
+        min_val, max_val = METRIC_RANGES[metric]
+        SENSOR_PROFILES.append({
+            "id": f"S-{profile_id:03d}",
+            "zone": zone,
+            "city": "Hamilton",
+            "metric": metric,
+            "min": min_val,
+            "max": max_val
+        })
+        profile_id += 1
 
 # ---------------- Helper to generate values ----------------
 def _next_value(profile: dict) -> float:

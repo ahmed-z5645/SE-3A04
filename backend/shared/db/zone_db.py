@@ -7,10 +7,14 @@ from backend.shared.models.zone import Zone
 class ZoneDB:
     def __init__(self):
         self.zones: Dict[str, Zone] = {
-            "1": Zone(id="1", name="West End", aqi=45, temp=22.5, humidity=65.0, noise=55.0, status="good", lat=40.7128, lng=-74.0060),
-            "2": Zone(id="2", name="Industrial Park", aqi=85, temp=25.0, humidity=70.0, noise=75.0, status="moderate", lat=40.7589, lng=-73.9851),
-            "3": Zone(id="3", name="Downtown Core", aqi=120, temp=28.0, humidity=60.0, noise=85.0, status="warning", lat=40.7505, lng=-73.9934),
-            "4": Zone(id="4", name="Harbour District", aqi=150, temp=30.0, humidity=75.0, noise=90.0, status="alert", lat=40.6892, lng=-74.0445),
+            "1": Zone(id="1", name="Westdale", aqi=45, temp=22.5, humidity=65.0, noise=55.0, status="good", lat=43.2673, lng=-79.9046),
+            "2": Zone(id="2", name="Mountain", aqi=85, temp=25.0, humidity=70.0, noise=75.0, status="moderate", lat=43.2164, lng=-79.8615),
+            "3": Zone(id="3", name="Downtown Core", aqi=120, temp=28.0, humidity=60.0, noise=85.0, status="warning", lat=43.2595, lng=-79.8734),
+            "4": Zone(id="4", name="Harbour District", aqi=150, temp=30.0, humidity=75.0, noise=90.0, status="alert", lat=43.2688, lng=-79.7947),
+            "5": Zone(id="5", name="Toronto", aqi=0, temp=0, humidity=0, noise=0, status="warning", lat=43.6548, lng=-79.3884),
+            "6": Zone(id="6", name="Oakville", aqi=0, temp=0, humidity=0, noise=0, status="good", lat=43.4683, lng=-79.6951),
+            "7": Zone(id="7", name="Brampton", aqi=0, temp=0, humidity=0, noise=0, status="moderate", lat=43.6842, lng=-79.6522),
+            "8": Zone(id="8", name="Mississauga", aqi=0, temp=0, humidity=0, noise=0, status="moderate", lat=43.5890, lng=-79.6412),
         }
         self.trends: Dict[str, List[float]] = defaultdict(list)
 
