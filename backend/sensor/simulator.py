@@ -6,7 +6,8 @@ from backend.shared.models.sensor import SensorData
 # ---------------- Sensor Profiles ----------------
 ZONES = ["West End", "Industrial Park", "Downtown Core", "Harbour District"]
 METRICS = ["AQI", "Temperature", "Humidity", "Noise"]
-CITY = "Hamilton"
+# CITY = "Hamilton"
+CITIES = ["Hamilton", "Toronto", "Oakville", "Brampton", "Mississauga"]
 
 # Sensible ranges for each metric
 METRIC_RANGES = {
@@ -19,18 +20,19 @@ METRIC_RANGES = {
 # Generate profiles for all combinations of zones and metrics
 SENSOR_PROFILES = []
 profile_id = 1
-for zone in ZONES:
-    for metric in METRICS:
-        min_val, max_val = METRIC_RANGES[metric]
-        SENSOR_PROFILES.append({
-            "id": f"S-{profile_id:03d}",
-            "zone": zone,
-            "city": CITY,
-            "metric": metric,
-            "min": min_val,
-            "max": max_val
-        })
-        profile_id += 1
+for city in CITIES:
+    for zone in ZONES:
+        for metric in METRICS:
+            min_val, max_val = METRIC_RANGES[metric]
+            SENSOR_PROFILES.append({
+                "id": f"S-{profile_id:03d}",
+                "zone": zone,
+                "city": city,
+                "metric": metric,
+                "min": min_val,
+                "max": max_val
+            })
+            profile_id += 1
 
 # ---------------- Helper to generate values ----------------
 def _next_value(profile: dict) -> float:
