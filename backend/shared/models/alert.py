@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from datetime import datetime
 
+from backend.shared.metrics import format_metric
 
 @dataclass
 class Alert:
@@ -35,8 +36,8 @@ class Alert:
             "zone": self.zone,
             "type": self.metric,
             "severity": severity,
-            "value": f"{self.metric}: {self.value}",
-            "rule": f"{self.metric} > {self.threshold}",
+            "value": format_metric(self.metric, self.value),
+            "rule": f"{self.metric} > {format_metric(self.metric, self.threshold)}",
             "time": self.timestamp.strftime("%I:%M %p"),
             "status": self.status,
         }

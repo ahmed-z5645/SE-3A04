@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 import re
+from backend.shared.metrics import format_metric
 
 @dataclass
 class Rule:
@@ -86,5 +87,5 @@ class Rule:
             "operator": self.operator,
             "threshold": self.threshold,
             "active": "active" if self.active else "inactive",
-            "condition": f"{self.metric.upper()} {self.operator} {self.threshold}"
+            "condition": f"{self.metric.upper()} {self.operator} {format_metric(self.metric, self.threshold)}"
         }
