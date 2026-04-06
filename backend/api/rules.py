@@ -23,7 +23,7 @@ def create_rule_router(rule_db: RuleDB) -> APIRouter:
             "name": payload["name"],
             "condition": payload["condition"],
             "zone": payload["zone"],
-            "status": payload.get("status", "active"),
+            "status": "active",
         }
         rule = Rule.from_dict(rule_data)
         rule_db.add_rule(rule)

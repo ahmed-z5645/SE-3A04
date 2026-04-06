@@ -4,7 +4,7 @@ from datetime import datetime
 
 @dataclass
 class Alert:
-    alert_id: str
+    id: str
     zone: str
     metric: str
     value: float
@@ -23,8 +23,7 @@ class Alert:
 
     def to_dict(self) -> dict:
         return {
-            "id": self.alert_id,
-            "type": "alert",
+            "id": self.id,
             "zone": self.zone,
             "metric": self.metric,
             "value": self.value,
@@ -37,7 +36,7 @@ class Alert:
     def from_dict(data: dict):
         """Create an Alert from a dictionary."""
         return Alert(
-            alert_id=data.get("id"),
+            id=data.get("id"),
             zone=data.get("zone"),
             metric=data.get("metric"),
             value=float(data.get("value")),

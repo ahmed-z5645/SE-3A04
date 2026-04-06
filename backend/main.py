@@ -1,7 +1,10 @@
 from fastapi import FastAPI
+import asyncio
+
 from fastapi.middleware.cors import CORSMiddleware
 from backend.alerts.alert_controller import AlertController
 from backend.sensor.sensor_controller import SensorController
+from backend.sensor.simulator import run_sensor_simulation
 from backend.shared.db.sensor_db import SensorDB
 from backend.shared.db.alert_db import AlertDB
 from backend.shared.db.rule_db import RuleDB
@@ -38,6 +41,22 @@ account_db = AccountDB()
 # Initialize controllers
 alert_controller = AlertController(alert_db, rule_db, zone_db)
 sensor_controller = SensorController(sensor_db, alert_controller, zone_db)
+
+@app.on_event("startup")
+async def start_sensor_simulation():
+    app.state.sensor_simulator_task = asyncio.create_task(
+        run_sensor_simulation(sensor_controller, interval_seconds=2.0)
+    )
+
+@app.on_event("shutdown")
+async def stop_sensor_simulation():
+    task = getattr(app.state, "sensor_simulator_task", None)
+    if task:
+        task.cancel()
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
 
 app.include_router(create_zone_router(zone_db), prefix="/api/v1/zones")
 app.include_router(create_alert_router(alert_db, alert_controller), prefix="/api/v1/alerts")

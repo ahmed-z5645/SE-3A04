@@ -3,7 +3,7 @@ class RuleDB:
         self.rules = {}
 
     def add_rule(self, rule):
-        self.rules[rule.rule_id] = rule
+        self.rules[rule.id] = rule
         return True
 
     def get_rules(self):
@@ -12,5 +12,5 @@ class RuleDB:
     def get_active_rules(self):
         return [r for r in self.rules.values() if r.active]
 
-    def delete_rule(self, rule_id: str):
-        return self.rules.pop(rule_id, None) is not None
+    def delete_rule(self, id: str):
+        return self.rules.pop(id, None) is not None
