@@ -21,7 +21,7 @@ class AlertController:
 
             # Normalize metric names for comparison
             metric_value = None
-            if self._metrics_match(rule.metric, sensor_data.metric):
+            if rule.metric == sensor_data.metric:
                 metric_value = sensor_data.value
 
             if metric_value is None:
@@ -48,18 +48,6 @@ class AlertController:
                 
             else:
                 log(f"OK: zone={sensor_data.zone} rule={rule.id} | {rule.metric}={metric_value} {rule.operator} {rule.threshold}")
-
-    def _metrics_match(self, rule_metric: str, sensor_metric: str) -> bool:
-        """Map frontend condition metric names to sensor metric names."""
-        mapping = {
-            "air": "aqi",
-            "aqi": "aqi",
-            "temperature": "temperature",
-            "temp": "temperature",
-            "humidity": "humidity",
-            "noise": "noise",
-        }
-        return mapping.get(rule_metric.lower()) == mapping.get(sensor_metric.lower())
 
     def acknowledge_alert(self, alert_id: str):
         alert = self.alert_db.get_alert(alert_id)

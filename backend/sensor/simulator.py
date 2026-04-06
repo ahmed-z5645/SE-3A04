@@ -5,14 +5,14 @@ from backend.shared.models.sensor import SensorData
 
 # ---------------- Sensor Profiles ----------------
 ZONES = ["West End", "Industrial Park", "Downtown Core", "Harbour District"]
-METRICS = ["AQI", "Temperature", "Humidity", "Noise"]
+METRICS = ["AQI", "Temp", "Humidity", "Noise"]
 # CITY = "Hamilton"
 CITIES = ["Hamilton", "Toronto", "Oakville", "Brampton", "Mississauga"]
 
 # Sensible ranges for each metric
 METRIC_RANGES = {
     "AQI": (50, 150),
-    "Temperature": (20, 40),
+    "Temp": (20, 40),
     "Humidity": (10, 70),
     "Noise": (50, 100)
 }

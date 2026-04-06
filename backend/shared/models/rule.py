@@ -31,11 +31,21 @@ class Rule:
     @staticmethod
     def parse_condition(condition_str: str):
         """Parse condition string like 'AQI > 100' into components."""
+        metric_mapping = {
+            "air": "AQI",
+            "aqi": "AQI",
+            "temperature": "Temp",
+            "temp": "Temp",
+            "humidity": "Humidity",
+            "noise": "Noise",
+        }
         match = re.match(r"(\w+)\s*(>=|<=|>|<|==|!=)\s*([\d\.]+)", condition_str)
         if not match:
             raise ValueError(f"Invalid condition format: {condition_str}")
         metric, operator, threshold = match.groups()
         threshold = float(threshold) if '.' in threshold else int(threshold)
+        # Map the metric to its canonical form
+        metric = metric_mapping.get(metric.lower(), metric)
         return metric, operator, threshold
 
     @staticmethod
@@ -44,6 +54,7 @@ class Rule:
         Create Rule instance from JSON-style dict.
         Expects: id, zone, condition, status (optional)
         """
+
         id = data.get("id")
         name = data.get("name", "")
         zone = data.get("zone")
