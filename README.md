@@ -27,8 +27,8 @@ This repository contains both the frontend (Next.js + TypeScript) and backend (F
 Create a `.env.local` file in `/frontend`:
 
 ```env
-NEXT_PUBLIC_API_MODE=mock              # mock | real
-NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=
+NEXT_PUBLIC_API_MODE=real
+NEXT_PUBLIC_GOOGLE_MAPS_API_KEY= #optional for Google Maps API
 ```
 
 ---
