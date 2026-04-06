@@ -144,9 +144,9 @@ class SensorController:
     # frontend/src/lib/api/types.ts.
     _FRONTEND_METRIC_TO_BACKEND = {
         "aqi": "AQI",
-        "temp": "temperature",
-        "noise": "noise",
-        "humidity": "humidity",
+        "temp": "Temperature",
+        "noise": "Noise",
+        "humidity": "Humidity",
     }
 
     # Returns data shaped for the frontend GET /rankings endpoint:
