@@ -2,12 +2,13 @@ from backend.shared.models.sensor import SensorData
 from backend.shared.db.sensor_db import SensorDB
 from backend.shared.logger import log
 from datetime import datetime, timedelta
-
+from collections import defaultdict
 
 class SensorController:
-    def __init__(self, sensor_db: SensorDB, alert_controller):
+    def __init__(self, sensor_db: SensorDB, alert_controller, zone_db):
         self.sensor_db = sensor_db
         self.alert_controller = alert_controller
+        self.zone_db = zone_db
 
     def handle_message(self, raw_data: dict):
         """
@@ -29,6 +30,9 @@ class SensorController:
         # Store data
         self.sensor_db.store(sensor)
         log(f"Stored: zone={sensor.zone} metric={sensor.metric}")
+
+        # Update zone trends and current zone metrics
+        self.zone_db.record_sensor_reading(sensor.zone, sensor.metric, sensor.value)
 
         # Forward to alert system with aggregated context
         self.alert_controller.process_sensor_data(sensor)
@@ -140,9 +144,9 @@ class SensorController:
     # frontend/src/lib/api/types.ts.
     _FRONTEND_METRIC_TO_BACKEND = {
         "aqi": "AQI",
-        "temp": "temperature",
-        "noise": "noise",
-        "humidity": "humidity",
+        "temp": "Temp",
+        "noise": "Noise",
+        "humidity": "Humidity",
     }
 
     # Returns data shaped for the frontend GET /rankings endpoint:
@@ -154,23 +158,49 @@ class SensorController:
             sort_by = "aqi"
 
         # Aggregate latest reading per (city, frontend-metric-key).
-        cities: dict = {}
+        # cities: dict = {}
+
+        # Because a city has multiple zones, we need the avg values
+        cities = defaultdict(lambda: {
+            "name": "",
+            "aqi": {"sum": 0, "count": 0},
+            "temp": {"sum": 0, "count": 0},
+            "noise": {"sum": 0, "count": 0},
+            "humidity": {"sum": 0, "count": 0},
+        })
+
         for sensor in self.sensor_db.get_recent_data().values():
             if not sensor.city:
                 continue
-            row = cities.setdefault(sensor.city, {
-                "name": sensor.city,
-                "aqi": 0,
-                "temp": 0,
-                "noise": 0,
-                "humidity": 0,
-            })
+            # row = cities.setdefault(sensor.city, {
+            #     "name": sensor.city,
+            #     "aqi": 0,
+            #     "temp": 0,
+            #     "noise": 0,
+            #     "humidity": 0,
+            # })
+            # This will automatically create defaultdict
+            cities[sensor.city]["name"] = sensor.city
             for fe_key, be_key in self._FRONTEND_METRIC_TO_BACKEND.items():
                 if sensor.metric == be_key:
-                    row[fe_key] = sensor.value
+                    cities[sensor.city][fe_key]["sum"] += sensor.value
+                    cities[sensor.city][fe_key]["count"] += 1
                     break
 
-        rows = list(cities.values())
+        # rows = list(cities.values())
+        rows = []
+        # Calculating averages and rounding to 2 decimals
+        for city_data in cities.values():
+            rows.append({
+                "name": city_data["name"],
+                "aqi": round(city_data["aqi"]["sum"] / city_data["aqi"]["count"], 2) if city_data["aqi"]["count"] > 0 else 0,
+                "temp": round(city_data["temp"]["sum"] / city_data["temp"]["count"], 2) if city_data["temp"]["count"] > 0 else 0,
+                "noise": round(city_data["noise"]["sum"] / city_data["noise"]["count"], 2) if city_data["noise"]["count"] > 0 else 0,
+                "humidity": round(city_data["humidity"]["sum"] / city_data["humidity"]["count"], 2) if city_data["humidity"]["count"] > 0 else 0,
+            })
+
+
+
 
         # Search filter on city name (case-insensitive substring).
         query = (search or "").strip().lower()

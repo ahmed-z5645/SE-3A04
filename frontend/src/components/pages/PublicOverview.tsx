@@ -53,15 +53,15 @@ export function PublicOverview() {
 
   useEffect(() => {
     let cancelled = false;
-    void Promise.all([
+    void Promise.allSettled([
       zonesApi.listZones(),
       alertsApi.listAlerts("active"),
       zonesApi.getTrends(),
     ]).then(([z, a, t]) => {
       if (cancelled) return;
-      setZones(z);
-      setAlerts(a);
-      setTrends(t);
+      if (z.status === "fulfilled") setZones(z.value);
+      if (a.status === "fulfilled") setAlerts(a.value);
+      if (t.status === "fulfilled") setTrends(t.value);
     });
     return () => {
       cancelled = true;

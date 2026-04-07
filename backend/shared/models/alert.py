@@ -1,10 +1,11 @@
 from dataclasses import dataclass
 from datetime import datetime
 
+from backend.shared.metrics import format_metric
 
 @dataclass
 class Alert:
-    alert_id: str
+    id: str
     zone: str
     metric: str
     value: float
@@ -22,22 +23,30 @@ class Alert:
         self.status = "resolved"
 
     def to_dict(self) -> dict:
+        # Derive severity from how far value exceeds threshold
+        if self.value >= self.threshold * 1.5:
+            severity = "critical"
+        elif self.value >= self.threshold:
+            severity = "warning"
+        else:
+            severity = "info"
+
         return {
-            "id": self.alert_id,
-            "type": "alert",
+            "id": self.id,
             "zone": self.zone,
-            "metric": self.metric,
-            "value": self.value,
-            "threshold": self.threshold,
+            "type": self.metric,
+            "severity": severity,
+            "value": format_metric(self.metric, self.value),
+            "rule": f"{self.metric} > {format_metric(self.metric, self.threshold)}",
+            "time": self.timestamp.strftime("%I:%M %p"),
             "status": self.status,
-            "timestamp": self.timestamp.isoformat()
         }
 
     @staticmethod
     def from_dict(data: dict):
         """Create an Alert from a dictionary."""
         return Alert(
-            alert_id=data.get("id"),
+            id=data.get("id"),
             zone=data.get("zone"),
             metric=data.get("metric"),
             value=float(data.get("value")),

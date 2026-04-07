@@ -3,12 +3,8 @@
  *
  * Pages import from `@/lib/api` — never from `mock/` or `real/` directly.
  * This file chooses the implementation based on `NEXT_PUBLIC_API_MODE`:
- *   - `mock` (default) → simulated latency + seeded data from `mock/`
- *   - `real`           → fetch calls against the live backend from `real/`
- *
- * When the real backend is ready, add a matching module under `real/` for
- * each domain and switch the branches below. The function signatures on both
- * sides must stay identical so pages keep working unchanged.
+ *   - `mock` → simulated latency + seeded data from `mock/`
+ *   - `real` → fetch calls against the live backend from `real/`
  */
 
 import * as mockAuth from "./mock/auth";
@@ -21,22 +17,29 @@ import * as mockRules from "./mock/rules";
 import * as mockAudit from "./mock/audit";
 import * as mockApiDocs from "./mock/apiDocs";
 
-const mode = process.env.NEXT_PUBLIC_API_MODE ?? "mock";
+import * as realAuth from "./real/auth";
+import * as realZones from "./real/zones";
+import * as realAlerts from "./real/alerts";
+import * as realSensors from "./real/sensors";
+import * as realRankings from "./real/rankings";
+import * as realAccounts from "./real/accounts";
+import * as realRules from "./real/rules";
+import * as realAudit from "./real/audit";
+import * as realApiDocs from "./real/apiDocs";
+
+const mode = process.env.NEXT_PUBLIC_API_MODE ?? "real";
 export const API_MODE: "mock" | "real" = mode === "real" ? "real" : "mock";
 
-// When API_MODE === "real", replace the right-hand side of each assignment
-// with the corresponding `real/<domain>` module. Kept as mock-only for now
-// so the surface is entirely stub-free at runtime.
-export const authApi = mockAuth;
-export const zonesApi = mockZones;
-export const alertsApi = mockAlerts;
-export const sensorsApi = mockSensors;
-export const rankingsApi = mockRankings;
-export const accountsApi = mockAccounts;
-export const rulesApi = mockRules;
-export const auditApi = mockAudit;
-export const apiDocsApi = mockApiDocs;
+export const authApi = API_MODE === "real" ? realAuth : mockAuth;
+export const zonesApi = API_MODE === "real" ? realZones : mockZones;
+export const alertsApi = API_MODE === "real" ? realAlerts : mockAlerts;
+export const sensorsApi = API_MODE === "real" ? realSensors : mockSensors;
+export const rankingsApi = API_MODE === "real" ? realRankings : mockRankings;
+export const accountsApi = API_MODE === "real" ? realAccounts : mockAccounts;
+export const rulesApi = API_MODE === "real" ? realRules : mockRules;
+export const auditApi = API_MODE === "real" ? realAudit : mockAudit;
+export const apiDocsApi = API_MODE === "real" ? realApiDocs : mockApiDocs;
 
-export { AuthError } from "./mock/auth";
-export type { RankingSort } from "./mock/rankings";
+export { AuthError } from "./real/auth";
+export type { RankingSort } from "./real/rankings";
 export * from "./types";

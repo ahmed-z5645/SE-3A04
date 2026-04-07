@@ -16,11 +16,20 @@ export function SensorsPage() {
 
   useEffect(() => {
     let cancelled = false;
-    void sensorsApi.listSensors().then((data) => {
+
+    const fetchSensors = async () => {
+      const data = await sensorsApi.listSensors();
       if (!cancelled) setSensors(data);
-    });
+    };
+
+    void fetchSensors();
+    const interval = setInterval(() => {
+      void fetchSensors();
+    }, 2000);
+
     return () => {
       cancelled = true;
+      clearInterval(interval);
     };
   }, []);
 

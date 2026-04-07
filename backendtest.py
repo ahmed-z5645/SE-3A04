@@ -4,6 +4,7 @@ from backend.alerts.alert_controller import AlertController
 from backend.shared.db.sensor_db import SensorDB
 from backend.shared.db.alert_db import AlertDB
 from backend.shared.db.rule_db import RuleDB
+from backend.shared.db.zone_db import ZoneDB
 
 from backend.shared.models.rule import Rule
 from datetime import datetime, timedelta
@@ -16,8 +17,9 @@ def main():
     rule_db = RuleDB()
 
     # Controllers
-    alert_controller = AlertController(alert_db, rule_db)
-    sensor_controller = SensorController(sensor_db, alert_controller)
+    zone_db = ZoneDB()
+    alert_controller = AlertController(alert_db, rule_db, zone_db)
+    sensor_controller = SensorController(sensor_db, alert_controller, zone_db)
 
     # User-defined threshold rules
     rules_data = [
@@ -183,6 +185,15 @@ def main():
     print(f"Total records stored: {len(sensor_db.get_all())}")
     print(f"Active alerts: {len(alert_db.get_active_alerts())}")
     print(f"Alert history: {len(alert_db.get_all_alerts())}")
+
+    print("\n=== ZONE STATUS ===")
+    for zone in zone_db.get_all_zones():
+        print(f"{zone['id']} {zone['name']}: status={zone['status']}, aqi={zone['aqi']}, temp={zone['temp']}, humidity={zone['humidity']}, noise={zone['noise']}")
+
+    print("\n=== RECORDED TRENDS ===")
+    trends = zone_db.get_trend_series()
+    for metric, series in trends.items():
+        print(f"{metric}: {series}")
 
 
     # ==================== Rankings Test =====================
